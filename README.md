@@ -15,7 +15,6 @@ A PowerShell script that provides a menu-driven interface for managing scrcpy se
 - **Quick Launch**: Set favorite presets for one-click launching.
 - **Flexible Configuration**: Customize resolution, codecs, bitrates, and advanced scrcpy options.
 - **Search Functionality**: Quickly find presets using fuzzy matching.
-- **Cross-Platform Compatibility**: Designed for Windows with PowerShell 7 or later.
 
 ## Requirements
 
