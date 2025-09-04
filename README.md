@@ -1,6 +1,8 @@
 # scrcpy Automation
 
-A PowerShell script that provides a menu-driven interface for managing scrcpy sessions with customizable presets, device selection, and recording capabilities.
+*Pronounced "**scr**een-**c**o**py** Automation"*
+
+A PowerShell script that provides a menu-driven interface for managing [scrcpy](https://github.com/Genymobile/scrcpy) sessions with customizable presets, device selection, and recording capabilities.
 
 ## Previews
 ![Screenshot1](img/screenshot1.png)
