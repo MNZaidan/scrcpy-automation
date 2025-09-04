@@ -81,11 +81,14 @@ Run the script to access the interactive menu:
 .\scrcpy-automation.ps1
 ```
 
-Launch with a specific preset (supports fuzzy matching):
+Launch scrcpy directly with a specific preset without the interactive menu (supports fuzzy matching):
 
 ```powershell
-.\scrcpy-automation.ps1 -Preset "Low Latency"
+.\scrcpy-automation.ps1 -Preset "Low"
+# this will match and launch the "Low Latency" preset if available.
+# if there are multiple matches, you will be prompted to choose one.
 ```
+
 
 ### Preset Management
 
