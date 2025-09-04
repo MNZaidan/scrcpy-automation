@@ -10,10 +10,10 @@ A PowerShell script that provides a menu-driven interface for managing scrcpy se
 ## Features
 
 - **Interactive Preset Manager**: Easily create, edit, organize, and search scrcpy configuration presets.
-- **Device Management**: Seamlessly switch between connected Android devices, with support for USB and wireless connections.
+- **Device Management**: Switch between connected Android devices, with support for USB and wireless connections using ADB.
 - **Smart Recording**: Record sessions in MKV format with optional automatic remuxing to MP4 (requires FFmpeg).
 - **Quick Launch**: Set favorite presets for one-click launching.
-- **Flexible Configuration**: Customize resolution, codecs, bitrates, and advanced scrcpy options.
+- **Flexible Configuration**: Customize resolution, codecs, bitrates, and other advanced scrcpy options.
 - **Search Functionality**: Quickly find presets using fuzzy matching.
 
 ## Requirements
@@ -24,7 +24,7 @@ A PowerShell script that provides a menu-driven interface for managing scrcpy se
 - **FFmpeg**: Optional, for MP4 remuxing.
 - **Android Device**: Must have USB debugging enabled.
 
-> **Important**: Older versions of Windows PowerShell (pre-installed with Windows) may not be able to run at all and could display errors. You can download PowerShell 7 from the official PowerShell GitHub page.
+> **Important**: Older versions of Windows PowerShell (pre-installed with Windows) may not be able to run at all and could display errors. You can download PowerShell 7 or newer from [the official PowerShell GitHub page](https://github.com/PowerShell/PowerShell/releases).
 
 ## Installation
 
@@ -40,6 +40,7 @@ Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 irm get.scoop.sh | iex
 
 # Install dependencies
+scoop bucket add main
 scoop install scrcpy adb ffmpeg
 ```
 
@@ -101,7 +102,7 @@ The preset manager allows you to:
 
 ### Recording Features
 
-- Choose between saving recordings as MKV or automatically remuxing to MP4 (Re-encoding audio is needed).
+- Choose between saving recordings as MKV or automatically remux to MP4 after recording (Re-encoding audio is needed).
 - Specify a custom recording save path.
 - Recording parameters are seamlessly integrated with presets.
 
@@ -114,7 +115,7 @@ The script uses a `scrcpy-config.json` file to store:
 - Selected device
 - Quick-launch settings
 
-This file is automatically created in the script's directory on first run.
+This file is automatically created in the script's directory on first run if it doesn't exist.
 
 ## Included Presets
 
