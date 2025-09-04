@@ -62,7 +62,7 @@ choco install scrcpy adb ffmpeg
 
 ### 2. Script Installation
 
-1. Download the `scrcpy-automation.ps1` script and/or the `scrcpy-config.json` through the [releases page](https://github.com/MNZaidan/scrcpy-automation/releases/latest).
+1. Download `scrcpy-automation.ps1` script and/or `scrcpy-config.json` through the [releases page](https://github.com/MNZaidan/scrcpy-automation/releases/latest).
 2. Ensure PowerShell 7 or newer is installed.
 3. Navigate to the script directory and run:
 
