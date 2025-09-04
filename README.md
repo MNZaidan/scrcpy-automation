@@ -10,10 +10,10 @@ A PowerShell script that provides a menu-driven interface for managing scrcpy se
 ## Features
 
 - **Interactive Preset Manager**: Easily create, edit, organize, and search scrcpy configuration presets.
-- **Device Management**: Seamlessly switch between connected Android devices, with support for USB and wireless connections.
+- **Device Management**: Switch between connected Android devices, with support for USB and wireless connections using ADB.
 - **Smart Recording**: Record sessions in MKV format with optional automatic remuxing to MP4 (requires FFmpeg).
 - **Quick Launch**: Set favorite presets for one-click launching.
-- **Flexible Configuration**: Customize resolution, codecs, bitrates, and advanced scrcpy options.
+- **Flexible Configuration**: Customize resolution, codecs, bitrates, and other advanced scrcpy options.
 - **Search Functionality**: Quickly find presets using fuzzy matching.
 
 ## Requirements
@@ -40,6 +40,7 @@ Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 irm get.scoop.sh | iex
 
 # Install dependencies
+scoop bucket add main
 scoop install scrcpy adb ffmpeg
 ```
 
@@ -62,7 +63,7 @@ choco install scrcpy adb ffmpeg
 
 ### 2. Script Installation
 
-1. Download or clone this repository to your local machine.
+1. Download `scrcpy-automation.ps1` script and/or `scrcpy-config.json` through the [releases page](https://github.com/MNZaidan/scrcpy-automation/releases/latest).
 2. Ensure PowerShell 7 or newer is installed.
 3. Navigate to the script directory and run:
 
@@ -114,7 +115,7 @@ The script uses a `scrcpy-config.json` file to store:
 - Selected device
 - Quick-launch settings
 
-This file is automatically created in the script's directory on first run.
+This file is automatically created in the script's directory on first run if it doesn't exist.
 
 ## Included Presets
 
