@@ -24,7 +24,7 @@ A PowerShell script that provides a menu-driven interface for managing scrcpy se
 - **FFmpeg**: Optional, for MP4 remuxing.
 - **Android Device**: Must have USB debugging enabled.
 
-> **Important**: Older versions of Windows PowerShell (pre-installed with Windows) may not be able to run at all and could display errors. You can download PowerShell 7 from the official PowerShell GitHub page.
+> **Important**: Older versions of Windows PowerShell (pre-installed with Windows) may not be able to run at all and could display errors. You can download PowerShell 7 or newer from [the official PowerShell GitHub page](https://github.com/PowerShell/PowerShell/releases).
 
 ## Installation
 
