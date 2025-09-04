@@ -1,0 +1,134 @@
+{
+  "recordingPath": "C:\\Users\\%USERNAME%\\Videos\\ScrcpyRecordings",
+  "recordingFormat": "AlwaysMKV",
+  "lastUsedPreset": "",
+  "quickLaunchPreset": "",
+  "selectedDevice": "",
+  "presets": [
+    {
+      "name": "- Getting Started -",
+      "description": "Basic presets for new users"
+    },
+    {
+      "name": "Just Works (Recommended)",
+      "description": "Optimized default settings for most users",
+      "tags": "default, balanced, recommended",
+      "favorite": true,
+      "resolution": "1080",
+      "videoCodec": "h264",
+      "videoBitrate": "8M",
+      "audioCodec": "opus",
+      "audioBitrate": "128K",
+      "otherOptions": "--max-fps=60 --render-driver=direct3d"
+    },
+    {
+      "name": "Battery Saver",
+      "description": "Lower quality for longer battery life",
+      "tags": "battery, efficient, casual",
+      "resolution": "720",
+      "videoCodec": "h264",
+      "videoBitrate": "4M",
+      "audioCodec": "opus",
+      "audioBitrate": "96K",
+      "otherOptions": "--max-fps=30 --power-off-on-close"
+    },
+    {
+      "name": "- Key Feature Examples -",
+      "description": "Demonstrates important script capabilities"
+    },
+    {
+      "name": "Example: Virtual Display",
+      "description": "--new-display=WIDTHxHEIGHT/DPI makes a new virtual display. Note: this option will kill the running app when scrcpy exits, --no-vd-destroy-content prevents this",
+      "tags": "example, virtual-display, reference",
+      "videoCodec": "h264",
+      "videoBitrate": "8M",
+      "otherOptions": "--new-display=800x600/160 --no-vd-destroy-content"
+    },
+    {
+      "name": "Example: Auto-Launch App",
+      "description": "--start-app=com.example.app or --start-app=?example app  (replace with actual package name)",
+      "tags": "example, start-app, reference",
+      "videoCodec": "h264",
+      "videoBitrate": "8M",
+      "otherOptions": "--start-app=com.example.app"
+    },
+    {
+      "name": "Example: Combined Features",
+      "description": "--new-display with --start-app. --no-vd-destroy-content",
+      "tags": "example, virtual-display, start-app, reference",
+      "videoCodec": "h264",
+      "videoBitrate": "8M",
+      "otherOptions": "--new-display=1024x768/200 --start-app=com.example.app --no-vd-destroy-content"
+    },
+    {
+      "name": "Example: Game Optimization",
+      "description": "Settings optimized for gaming",
+      "tags": "example, gaming, optimization, reference",
+      "videoCodec": "h264",
+      "videoBitrate": "15M",
+      "audioCodec": "opus",
+      "audioBitrate": "128K",
+      "otherOptions": "--max-fps=60 --turn-screen-off --no-control"
+    },
+    {
+      "name": "Example: Recording Preset",
+      "description": "Recording-only mode with no playback, shows touches for tutorials",
+      "tags": "example, recording, tutorial, reference",
+      "videoCodec": "h264",
+      "videoBitrate": "25M",
+      "audioCodec": "opus",
+      "audioBitrate": "196K",
+      "otherOptions": "--no-playback --show-touches --window-title=\"Recording Session\""
+    },
+    {
+      "name": "Example: Audio-Only Control",
+      "description": "Control device with audio but no video (saves bandwidth)",
+      "tags": "example, audio-only, control, bandwidth",
+      "audioCodec": "opus",
+      "audioBitrate": "128K",
+      "otherOptions": "--no-video --window-title=\"Audio Control\""
+    },
+    {
+      "name": "- Template Presets -",
+      "description": "Copy and modify these for your own apps"
+    },
+    {
+      "name": "Template: Video App",
+      "description": "For YouTube/Netflix. Replace PACKAGE.NAME, adjust display size",
+      "tags": "template, video, streaming, virtual-display start-app",
+      "videoCodec": "h264",
+      "videoBitrate": "12M",
+      "audioCodec": "opus",
+      "audioBitrate": "196K",
+      "otherOptions": "--new-display=1920x1080/320 --start-app=PACKAGE.NAME --no-vd-destroy-content --max-fps=60"
+    },
+    {
+      "name": "Template: Social Media App",
+      "description": "For Instagram/TikTok. Replace PACKAGE.NAME, adjust virtual display size",
+      "tags": "template, social, media, virtual-display, start-app",
+      "videoCodec": "h264",
+      "videoBitrate": "10M",
+      "otherOptions": "--new-display=1080x1920/320 --start-app=PACKAGE.NAME --no-vd-destroy-content"
+    },
+    {
+      "name": "Template: Game App",
+      "description": "For mobile games. Replace PACKAGE.NAME, adjust display size",
+      "tags": "template, gaming, virtual-display, start-app",
+      "videoCodec": "h264",
+      "videoBitrate": "15M",
+      "audioCodec": "opus",
+      "audioBitrate": "128K",
+      "otherOptions": "--new-display=1000x1000/240 --start-app=PACKAGE.NAME --no-vd-destroy-content --turn-screen-off --max-fps=60"
+    },
+    {
+      "name": "Template: Monitor/Debug Mode",
+      "description": "View-only mode for testing/monitoring. Window stays on top, shows touches, no control",
+      "tags": "template, monitor, debug, testing, view-only",
+      "videoCodec": "h264",
+      "videoBitrate": "6M",
+      "audioCodec": "opus",
+      "audioBitrate": "128K",
+      "otherOptions": "--no-control --show-touches --always-on-top --window-title=\"Monitor Mode\""
+    }
+  ]
+}
