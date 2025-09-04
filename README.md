@@ -128,7 +128,7 @@ The script includes a variety of pre-configured presets to get you started, feel
 
 
 ## Troubleshooting
-Refer to the official scrcpy Github documentation: [scrcpy GitHub](https://github.com/Genymobile/scrcpy)
+Please refer to the official scrcpy Github documentation for more information: [scrcpy GitHub](https://github.com/Genymobile/scrcpy)
 
 - **PowerShell Version**: Ensure you're using PowerShell 7 or newer to avoid compatibility issues.
 - **scrcpy/ADB Not Found**: Verify that scrcpy and ADB are installed and added to your system's PATH.
