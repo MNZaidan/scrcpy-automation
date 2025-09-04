@@ -101,7 +101,7 @@ The preset manager allows you to:
 
 ### Recording Features
 
-- Choose between saving recordings as MKV or automatically remuxing to MP4 (Re-encoding audio is needed).
+- Choose between saving recordings as MKV or automatically remux to MP4 after recording (Re-encoding audio is needed).
 - Specify a custom recording save path.
 - Recording parameters are seamlessly integrated with presets.
 
