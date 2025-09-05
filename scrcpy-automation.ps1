@@ -1778,7 +1778,21 @@ function Start-Scrcpy {
         }
         
         # 6. Post-Session Handling
-        Write-InfoLog "scrcpy session ended with exit code: $($process.ExitCode)"
+        switch ($process.ExitCode) {
+            0 {
+                Write-InfoLog "Normal program termination."
+            }
+            1 {
+                Write-ErrorLog "Start failure. Review scrcpy output for details."
+            }
+            2 {
+                Write-ErrorLog "Device disconnected while running."
+            }
+            default {
+                Write-ErrorLog "scrcpy exited with an unexpected code: $($process.ExitCode)."
+            }
+        }
+        
         if ($IsRecording -and (Test-Path $fullPath)) {
             if ($config.recordingFormat -eq "RemuxToMP4") {
                 Write-InfoLog "Starting remuxing process for: $fullPath"
