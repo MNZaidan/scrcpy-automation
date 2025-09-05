@@ -1779,7 +1779,7 @@ function Start-Scrcpy {
         # 6. Post-Session Handling
         switch ($process.ExitCode) {
             0 {
-                Write-InfoLog "Normal program termination."
+                Write-InfoLog "scrcpy session ended."
             }
             1 {
                 Write-ErrorLog "Start failure. Review scrcpy output for details."
