@@ -741,19 +741,6 @@ function Show-DeviceSelection {
 
 #region Configuration Management Functions
 function Get-Config {
-    $oldConfigPath = Join-Path $PSScriptRoot "scrcpy-presets.json"
-    if (-not (Test-Path $ConfigPath) -and (Test-Path $oldConfigPath)) {
-        Write-InfoLog "Old 'scrcpy-presets.json' found. Renaming to 'scrcpy-config.json'."
-        try {
-            Rename-Item -Path $oldConfigPath -NewName "scrcpy-config.json" -ErrorAction Stop
-            Start-Sleep -Seconds 1
-        }
-        catch {
-            Write-ErrorLog "Failed to rename config file" $_.Exception
-            return $null
-        }
-    }
-
     if (-not (Test-Path $ConfigPath)) {
         Write-DebugLog "Config file not found. Creating a default one."
         $defaultConfig = [ordered]@{
