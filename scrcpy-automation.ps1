@@ -365,7 +365,6 @@ function Read-Input {
             }
             27 {
                 # Escape key
-                Write-Host " [Canceled]" -ForegroundColor Red
                 Write-Host ""
                 Write-InfoLog "User canceled input"
                 return $null
@@ -485,11 +484,12 @@ function Invoke-AdbTcpip {
     $port = Read-Input -Prompt "Enter port number" -DefaultValue "5555"
     if ([string]::IsNullOrWhiteSpace($port)) { return }
     if (-not $DisableClearHost) { Clear-Host }
-    Write-Host "Running: adb tcpip $port" -ForegroundColor Gray
+    Write-InfoLog "Running: adb tcpip $port"
     try {
         $result = Invoke-SafeCommand -Command { & $adbPath tcpip $port } -ErrorMessage "Failed to run adb tcpip command" -ContinueOnError
-        Write-Host $result
-        Write-Host "`nADB tcpip command finished. You can now connect your device wirelessly using `adb connect <device-ip>:$port`." -ForegroundColor Green
+        Write-InfoLog $result
+        Write-InfoLog "`nADB tcpip command finished. " -ForegroundColor Green
+        Write-Host "You can now connect your device wirelessly using `adb connect <device-ip>:$port`."
     }
     catch {
         Write-ErrorLog "An error occurred while running adb tcpip." $_.Exception
@@ -508,11 +508,11 @@ function Invoke-AdbPair {
     $code = Read-Input -Prompt "Enter pairing code"
     if ([string]::IsNullOrWhiteSpace($code)) { return }
     if (-not $DisableClearHost) { Clear-Host }
-    Write-Host "Running: adb pair $ip`:$port" -ForegroundColor Gray
+    Write-InfoLog "Running: adb pair $ip`:$port"
     try {
         $result = Invoke-SafeCommand -Command { & $adbPath pair "$ip`:$port" $code } -ErrorMessage "Failed to run adb pair command" -ContinueOnError
-        Write-Host $result
-        Write-Host "`nADB pair command finished." -ForegroundColor Green
+        Write-InfoLog $result
+        Write-InfoLog "`nADB pair command finished." -ForegroundColor Green
     }
     catch {
         Write-ErrorLog "An error occurred while running adb pair." $_.Exception
@@ -535,18 +535,15 @@ function Invoke-AdbConnect {
         return 
     }
     if (-not $DisableClearHost) { Clear-Host }
-    Write-Host "Running: adb connect $ip`:$port" -ForegroundColor Gray
+    Write-InfoLog "Running: adb connect $ip`:$port"
     try {
-        Write-DebugLog "Executing: adb connect $ip`:$port"
         $result = Invoke-SafeCommand -Command { & $adbPath connect "$ip`:$port" } -ErrorMessage "Failed to run adb connect command" -ContinueOnError
-        Write-Host $result
+        Write-InfoLog $result
         if ($result -match "connected to") {
-            Write-InfoLog "Successfully connected to $ip`:$port"
-            Write-Host "`n✅ Success! Device is now connected." -ForegroundColor Green
+            Write-InfoLog "Successfully connected to $ip`:$port" -ForegroundColor Green
         }
         else {
             Write-ErrorLog "Failed to connect to $ip`:$port - $result"
-            Write-Host "`n❌ Connection failed." -ForegroundColor Red
         }
     }
     catch {
@@ -569,23 +566,23 @@ function Invoke-AdbAutoConnect {
         if ($neighbors) {
             foreach ($neighbor in $neighbors) {
                 $ip = $neighbor.IPAddress
-                Write-Host "Trying: adb connect $ip`:$port" -ForegroundColor Gray
+                Write-InfoLog "Trying: adb connect $ip`:$port"
                 $result = Invoke-SafeCommand -Command { & $adbPath connect "$ip`:$port" } -ErrorMessage "Failed to connect to $ip" -ContinueOnError
-                Write-Host $result
+                Write-InfoLog $result
                 
                 if ($result -match "connected to") {
-                    Write-Host "✅ Success! Connected to $ip`:$port" -ForegroundColor Green
+                    Write-InfoLog "Successfully connected to $ip`:$port" -ForegroundColor Green
                     $found = $true
                     break
                 }
             }
         } else {
-            Write-Host "No devices found with Get-NetNeighbor, trying ARP fallback..." -ForegroundColor Yellow
+            Write-InfoLog "No devices found with Get-NetNeighbor, trying ARP fallback..."
             throw "No devices found"
         }
     }
     catch {
-        Write-Host "Using ARP table scan as fallback..." -ForegroundColor Yellow
+        Write-InfoLog "Using ARP table scan as fallback..."
         $arpOutput = Invoke-SafeCommand -Command { & arp -a } -ErrorMessage "Failed to run arp command" -ContinueOnError
         
         foreach ($line in $arpOutput) {
@@ -593,12 +590,12 @@ function Invoke-AdbAutoConnect {
                 $parts = $line.Trim() -split '\s+'
                 $ip = $parts[0]
                 
-                Write-Host "Trying: adb connect $ip`:$port" -ForegroundColor Gray
+                Write-InfoLog "Trying: adb connect $ip`:$port"
                 $result = Invoke-SafeCommand -Command { & $adbPath connect "$ip`:$port" } -ErrorMessage "Failed to connect to $ip" -ContinueOnError
-                Write-Host $result
+                Write-InfoLog $result
                 
                 if ($result -match "connected to") {
-                    Write-Host "✅ Success! Connected to $ip`:$port" -ForegroundColor Green
+                    Write-InfoLog "Successfully connected to $ip`:$port" -ForegroundColor Green
                     $found = $true
                     break
                 }
@@ -607,7 +604,7 @@ function Invoke-AdbAutoConnect {
     }
 
     if (-not $found) {
-        Write-Host "❌ No device could be connected using network discovery." -ForegroundColor Red
+        Write-ErrorLog "No device could be connected using network discovery."
         Write-Host "Please ensure your device is connected to the same network and ADB over WiFi is enabled." -ForegroundColor Yellow
     }
     
@@ -617,11 +614,11 @@ function Invoke-AdbAutoConnect {
 function Invoke-AdbKillServer {
     param ([string]$adbPath)
     if (-not $DisableClearHost) { Clear-Host }
-    Write-InfoLog "Running: adb kill-server" -ForegroundColor Gray
+    Write-InfoLog "Running: adb kill-server"
     try {
         $result = Invoke-SafeCommand -Command { & $adbPath kill-server } -ErrorMessage "Failed to run adb kill-server command" -ContinueOnError
-        Write-Host $result
-        Write-InfoLog "adb kill-server executed"
+        Write-InfoLog $result
+        Write-InfoLog "adb kill-server executed" 
         Write-Host "`nThe script might be a bit slow for a while." -ForegroundColor Green
     }
     catch {
@@ -709,7 +706,7 @@ function Show-DeviceSelection {
             $selectedDevice = $deviceList[$selectedDeviceIndex].Serial
             
             if ($deviceList[$selectedDeviceIndex].State -ne 'device') {
-                Write-Host "Device is in $($deviceList[$selectedDeviceIndex].State) state." -ForegroundColor Yellow
+                Write-InfoLog "Device is in $($deviceList[$selectedDeviceIndex].State) state." -ForegroundColor Yellow
                 Write-Host "It may take a moment to become ready..." -ForegroundColor Yellow
                 
                 $attempts = 0
@@ -723,13 +720,13 @@ function Show-DeviceSelection {
                     
                     if ($refreshedDevice -and $refreshedDevice.State -eq 'device') {
                         $deviceReady = $true
-                        Write-Host "Device is now ready!" -ForegroundColor Green
+                        Write-InfoLog "Device is now ready!" -ForegroundColor Green
                     }
                     $attempts++
                 }
                 
                 if (-not $deviceReady) {
-                    Write-Host "Device did not become ready. Please check connection." -ForegroundColor Red
+                    Write-ErrorLog "Device did not become ready. Please check connection."
                     Start-Sleep -Seconds 2
                     continue
                 }
@@ -896,7 +893,7 @@ function Save-Config {
         }
 
         $sanitizedConfig | ConvertTo-Json -Depth 10 | Set-Content -Path $ConfigPath -ErrorAction Stop
-        Write-InfoLog "Configuration saved successfully."
+        Write-InfoLog "Configuration saved successfully." -ForegroundColor Green
     }
     catch {
         Write-ErrorLog "Error saving configuration to '$ConfigPath'." $_.Exception
@@ -939,10 +936,10 @@ function Show-RecordingOptions {
                         if ($confirm -eq 'y') {
                             try {
                                 New-Item -Path $newPath -ItemType Directory -ErrorAction Stop | Out-Null
-                                Write-Host "Directory created." -ForegroundColor Green
+                                Write-InfoLog "Directory created." -ForegroundColor Green
                             }
                             catch {
-                                Write-Host "Error creating directory: $($_.Exception.Message)" -ForegroundColor Red
+                                Write-ErrorLog "Error creating directory: $($_.Exception.Message)"
                                 Start-Sleep -Seconds 2
                                 continue
                             }
@@ -951,7 +948,7 @@ function Show-RecordingOptions {
                     }
                     $config.recordingPath = $newPath
                     Save-Config $config
-                    Write-Host "Recording path updated to: $newPath" -ForegroundColor Green
+                    Write-InfoLog "Recording path updated to: $newPath" -ForegroundColor Green
                     Start-Sleep -Seconds 2
                 }
             }
@@ -984,7 +981,7 @@ function Show-RecordingOptions {
                 
                 $config.recordingFormat = if ($formatChoice -eq 1) { "RemuxToMP4" } else { "AlwaysMKV" }
                 Save-Config $config
-                Write-Host "Recording format set to: $($formatOptions[$formatChoice])" -ForegroundColor Green
+                Write-InfoLog "Recording format set to: $($formatOptions[$formatChoice])" -ForegroundColor Green
                 Start-Sleep -Seconds 2
             }
         }
@@ -1137,13 +1134,13 @@ function Show-PresetEditor {
                 # 'S' key
                 $newName = $preset.name.Trim()
                 if ([string]::IsNullOrWhiteSpace($newName)) {
-                    Write-Host "`nPreset Name cannot be empty." -ForegroundColor Red
+                    Write-ErrorLog "`nPreset Name cannot be empty." -ForegroundColor Red
                     Start-Sleep -Seconds 2
                     continue
                 }
                 $isNameDuplicate = $ExistingPresets | Where-Object { $_.name -ne $originalName -and $_.name -eq $newName }
                 if ($isNameDuplicate) {
-                    Write-Host "`nError: A preset with the name '$newName' already exists." -ForegroundColor Red
+                    Write-ErrorLog "`nError: A preset with the name '$newName' already exists."
                     Start-Sleep -Seconds 3
                     continue
                 }
@@ -1524,7 +1521,7 @@ function Invoke-Remux {
     )
 
     $mp4Path = $SourcePath -replace '\.mkv$', '.mp4'
-    Write-Host "`nStarting remuxing process..." -ForegroundColor Yellow
+    Write-InfoLog "`nStarting remuxing process..." -ForegroundColor Yellow
 
     try {
         $ffmpegPath = (Get-Command ffmpeg -ErrorAction SilentlyContinue).Path
@@ -1532,7 +1529,7 @@ function Invoke-Remux {
             throw "FFmpeg not found. Cannot remux. Please install FFmpeg and add it to your system's PATH."
         }
         
-        Write-Host "Using FFmpeg's native AAC encoder for audio (VBR Quality)." -ForegroundColor Yellow
+        Write-InfoLog "Using FFmpeg's native AAC encoder for audio (VBR Quality)." -ForegroundColor Yellow
         $audioCodec = "aac"
         $audioQuality = "1.8" # VBR quality setting, adjust as needed
         
@@ -1542,7 +1539,7 @@ function Invoke-Remux {
         if (-not (Test-Path $mp4Path)) {
             throw "FFmpeg failed to mux the final video file."
         }
-        Write-Host "Remuxing complete. Recording saved to: $mp4Path" -ForegroundColor Cyan
+        Write-InfoLog "Remuxing complete. Recording saved to: $mp4Path" -ForegroundColor Cyan
         
         if (Test-Path $mp4Path) {
             Remove-Item $SourcePath -Force
@@ -1799,7 +1796,6 @@ function Start-Scrcpy {
             }
             else {
                 Write-InfoLog "Recording saved to: $fullPath"
-                Write-Host "Recording saved to: $fullPath" -ForegroundColor Cyan
             }
         }
         
