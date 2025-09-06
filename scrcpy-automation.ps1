@@ -61,6 +61,8 @@
 #region Parameters
 [CmdletBinding()]
 param (
+    [Parameter(Mandatory = $false, HelpMessage = "The ADB serial of the device to connect to.")]
+    [string]$DeviceSerial,
     [Parameter(Mandatory = $false, HelpMessage = "Launch scrcpy directly with the specified preset name.")]
     [string]$Preset,
     [Parameter(Mandatory = $false, HelpMessage = "Enable logging to file.")]
@@ -1565,11 +1567,17 @@ function Start-Scrcpy {
         $executables,
         $config,
         [switch]$IsRecording,
-        [string]$InitialPresetName = $null
+        [string]$InitialPresetName = $null,
+        [string]$DeviceSerial = $null
     )
     
     $relaunch          = $false
     $currentPresetName = $InitialPresetName
+
+    if (-not [string]::IsNullOrEmpty($DeviceSerial)) {
+        $config.selectedDevice = $DeviceSerial
+        Write-InfoLog "Using provided device serial: $DeviceSerial"
+    }
 
     Write-InfoLog "Starting scrcpy session (Recording: $IsRecording, InitialPreset: $(
         if ($InitialPresetName) {
@@ -1587,9 +1595,14 @@ function Start-Scrcpy {
             $device = $deviceList | Where-Object { $_.Serial -eq $config.selectedDevice } | Select-Object -First 1
             
             if (-not $device -or $device.State -ne 'device') {
-                Write-ErrorLog "Device '$($config.selectedDevice)' is not connected or not in device state. Please select a new one."
-                $config.selectedDevice = ""
-                Start-Sleep -Seconds 2
+                if (-not [string]::IsNullOrEmpty($DeviceSerial)) {
+                    Write-ErrorLog "Provided device '$($config.selectedDevice)' is not connected or not in device state."
+                    return
+                } else {
+                    Write-ErrorLog "Device '$($config.selectedDevice)' is not connected or not in device state. Please select a new one."
+                    $config.selectedDevice = ""
+                    Start-Sleep -Seconds 2
+                }
             }
         }
         
@@ -1879,7 +1892,7 @@ function Main {
 
         if ($targetPreset) {
             Write-InfoLog "Using preset: '$($targetPreset.name)'"
-            Start-Scrcpy -executables $executables -config $config -InitialPresetName $targetPreset.name
+            Start-Scrcpy -executables $executables -config $config -InitialPresetName $targetPreset.name -DeviceSerial $DeviceSerial
             Write-InfoLog "Exiting script after direct launch."
         }
         else {
