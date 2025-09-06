@@ -1852,6 +1852,13 @@ function Main {
     $config = Get-Config
     if ($null -eq $config) { Read-Host "Press Enter to exit..."; return }
 
+    if (-not [string]::IsNullOrEmpty($Preset) -and $Preset.StartsWith('-')) {
+        Write-InfoLog "The argument '$Preset' appears to be a command-line switch" -ForegroundColor Yellow
+        Write-Host "For script help, use the standard PowerShell command: Get-Help `"$PSCommandPath`""
+        Read-Host "Press Enter to exit..."
+        return
+    }
+
     if (-not [string]::IsNullOrEmpty($Preset)) {
         Write-InfoLog "Searching for preset: '$Preset'"
     
