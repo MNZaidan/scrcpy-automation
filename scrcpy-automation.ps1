@@ -971,21 +971,30 @@ function Save-Config {
             }
             $sanitizedConfig.presets += [pscustomobject]$sanitizedPreset
         }
-
-        if ($DebugPreference -ne "SilentlyContinue" -and $oldConfig) {
+        
+        $hasChanges = $false
+        if ($oldConfig) {
             $changes = Compare-ConfigChanges -oldConfig $oldConfig -newConfig $sanitizedConfig
             if ($changes.Count -gt 0) {
-                Write-DebugLog "Configuration changed:"
-                foreach ($change in $changes) {
-                    Write-DebugLog "  $change"
+                $hasChanges = $true
+                if ($DebugPreference -ne "SilentlyContinue") {
+                    Write-DebugLog "Configuration changed:"
+                    foreach ($change in $changes) {
+                        Write-DebugLog "  $change"
+                    }
                 }
             } else {
                 Write-DebugLog "No configuration changed"
+                return
             }
+        } else {
+            $hasChanges = $true
         }
 
-        $sanitizedConfig | ConvertTo-Json -Depth 10 | Set-Content -Path $ConfigPath -ErrorAction Stop
-        Write-InfoLog "Configuration saved successfully." -ForegroundColor Green
+        if ($hasChanges) {
+            $sanitizedConfig | ConvertTo-Json -Depth 10 | Set-Content -Path $ConfigPath -ErrorAction Stop
+            Write-InfoLog "Configuration saved successfully." -ForegroundColor Green
+        }
     }
     catch {
         Write-ErrorLog "Error saving configuration to '$ConfigPath'." $_.Exception
