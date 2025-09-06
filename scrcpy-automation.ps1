@@ -208,6 +208,33 @@ function Invoke-SafeCommand {
         return $null
     }
 }
+function Compare-ConfigChanges {
+    param($oldConfig, $newConfig)
+    $changes = @()
+    
+    $properties = @('recordingPath', 'recordingFormat', 'lastUsedPreset', 'quickLaunchPreset', 'selectedDevice')
+    foreach ($prop in $properties) {
+        if ($oldConfig.$prop -ne $newConfig.$prop) {
+            $changes += "$prop changed from '$($oldConfig.$prop)' to '$($newConfig.$prop)'"
+        }
+    }
+    
+    if ($oldConfig.presets.Count -ne $newConfig.presets.Count) {
+        $changes += "Preset count changed from $($oldConfig.presets.Count) to $($newConfig.presets.Count)"
+    } else {
+        for ($i = 0; $i -lt $oldConfig.presets.Count; $i++) {
+            $oldPreset = $oldConfig.presets[$i]
+            $newPreset = $newConfig.presets[$i]
+            
+            foreach ($prop in $PresetProperties) {
+                if ($oldPreset.$prop -ne $newPreset.$prop) {
+                    $changes += "Preset $($i+1) ($($oldPreset.name)) $prop changed from '$($oldPreset.$prop)' to '$($newPreset.$prop)'"
+                }
+            }
+        }
+    }
+    return $changes
+}
 #endregion
 
 #region Menu and Input Functions
@@ -876,6 +903,18 @@ function Get-Config {
 
 function Save-Config {
     param ($config)
+    
+    $oldConfig = $null
+    if (Test-Path $ConfigPath) {
+        try {
+            $jsonContent = Get-Content -Path $ConfigPath -Raw -ErrorAction Stop
+            $oldConfig = $jsonContent | ConvertFrom-Json -AsHashtable -ErrorAction Stop
+        }
+        catch {
+            Write-DebugLog "Could not read old config for comparison: $($_.Exception.Message)"
+        }
+    }
+    
     try {
         $deviceValue = if ($null -eq $config.selectedDevice) { 
             "" 
@@ -915,6 +954,18 @@ function Save-Config {
                 }
             }
             $sanitizedConfig.presets += [pscustomobject]$sanitizedPreset
+        }
+
+        if ($DebugPreference -ne "SilentlyContinue" -and $oldConfig) {
+            $changes = Compare-ConfigChanges -oldConfig $oldConfig -newConfig $sanitizedConfig
+            if ($changes.Count -gt 0) {
+                Write-DebugLog "Configuration changed:"
+                foreach ($change in $changes) {
+                    Write-DebugLog "  $change"
+                }
+            } else {
+                Write-DebugLog "No configuration changed"
+            }
         }
 
         $sanitizedConfig | ConvertTo-Json -Depth 10 | Set-Content -Path $ConfigPath -ErrorAction Stop
