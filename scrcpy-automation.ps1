@@ -678,7 +678,7 @@ function Invoke-AdbKillServer {
         $result = Invoke-SafeCommand -Command { & $adbPath kill-server } -ErrorMessage "Failed to run adb kill-server command" -ContinueOnError
         Write-InfoLog $result
         Write-InfoLog "adb kill-server executed" 
-        Write-Host "`nThe script might be a bit slow for a while." -ForegroundColor Green
+        Write-Host "`nThe script might be a bit slow for a while." -ForegroundColor Red
         $global:LastAdbOperation = Get-Date
     }
     catch {
