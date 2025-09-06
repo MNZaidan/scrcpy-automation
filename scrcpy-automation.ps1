@@ -108,7 +108,8 @@ function Write-DetailedLog {
     param (
         [string]$Message,
         [System.Management.Automation.ErrorRecord]$Exception = $null,
-        [string]$Level = "INFO"
+        [string]$Level = "INFO",
+        [string]$ForegroundColor = $null
     )
     
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
@@ -133,7 +134,14 @@ function Write-DetailedLog {
         "ERROR" { Write-Host $consoleOutput -ForegroundColor Red }
         "WARN"  { Write-Host $consoleOutput -ForegroundColor Yellow }
         "DEBUG" { Write-Host $consoleOutput -ForegroundColor Magenta }
-        default { Write-Host $consoleOutput -ForegroundColor Green }
+        default {             
+            if ($ForegroundColor) {
+                Write-Host $consoleOutput -ForegroundColor $ForegroundColor
+            }
+            else {
+                Write-Host $consoleOutput
+            }
+        }
     }
 }
 
@@ -145,8 +153,11 @@ function Write-DebugLog {
 }
 
 function Write-InfoLog {
-    param([string]$Message)
-    Write-DetailedLog -Message $Message -Level "INFO"
+    param(
+        [string]$Message,
+        [string]$ForegroundColor = $null
+    )
+    Write-DetailedLog -Message $Message -Level "INFO" -ForegroundColor $ForegroundColor
 }
 
 function Write-ErrorLog {
