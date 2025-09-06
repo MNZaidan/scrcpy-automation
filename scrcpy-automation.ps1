@@ -152,6 +152,14 @@ function Write-DebugLog {
     }
 }
 
+function Write-WarnLog {
+    param (
+        [string]$Message,
+        [string]$ForegroundColor = "Yellow"
+    )
+    Write-DetailedLog -Message $Message -Level "WARN"
+}
+
 function Write-InfoLog {
     param(
         [string]$Message,
