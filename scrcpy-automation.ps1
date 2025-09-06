@@ -77,7 +77,9 @@ param (
     [string]$LogPath
 )
 #endregion
+
 #region Global Variables and Defaults
+$global:LastAdbOperation = $null
 $OutputEncoding = [System.Text.Encoding]::UTF8
 $ScriptVersion = "2.22"
 $MaxMenuItems = 19 # The maximum number of items to display in menus before scrolling
@@ -502,7 +504,7 @@ function Get-DeviceDisplayName {
         return "No device selected" 
     }
     
-    Start-Sleep -Milliseconds 500
+    Start-Sleep -Milliseconds 300
     
     $device = $null
     $retryCount = 0
@@ -518,10 +520,12 @@ function Get-DeviceDisplayName {
     
     if ($device) {
         if ($device.Model) {
-            return "$($device.Model) ($($device.Serial))"
+            $status = if ($device.State -ne 'device') { " [$($device.State)]" } else { "" }
+            return "$($device.Model) ($($device.Serial))$status"
         }
         else {
-            return $device.Serial
+            $status = if ($device.State -ne 'device') { " [$($device.State)]" } else { "" }
+            return "$($device.Serial)$status"
         }
     }
     else { 
@@ -539,6 +543,7 @@ function Invoke-AdbTcpip {
     try {
         $result = Invoke-SafeCommand -Command { & $adbPath tcpip $port } -ErrorMessage "Failed to run adb tcpip command" -ContinueOnError
         Write-InfoLog $result
+        $global:LastAdbOperation = Get-Date
         Write-InfoLog "`nADB tcpip command finished. " -ForegroundColor Green
         Write-Host "You can now connect your device wirelessly using `adb connect <device-ip>:$port`."
     }
@@ -563,7 +568,8 @@ function Invoke-AdbPair {
     try {
         $result = Invoke-SafeCommand -Command { & $adbPath pair "$ip`:$port" $code } -ErrorMessage "Failed to run adb pair command" -ContinueOnError
         Write-InfoLog $result
-        Write-InfoLog "`nADB pair command finished." -ForegroundColor Green
+        Write-InfoLog "`nADB pair command finished." -ForegroundColor 
+        $global:LastAdbOperation = Get-Date
     }
     catch {
         Write-ErrorLog "An error occurred while running adb pair." $_.Exception
@@ -590,6 +596,7 @@ function Invoke-AdbConnect {
     try {
         $result = Invoke-SafeCommand -Command { & $adbPath connect "$ip`:$port" } -ErrorMessage "Failed to run adb connect command" -ContinueOnError
         Write-InfoLog $result
+        $global:LastAdbOperation = Get-Date
         if ($result -match "connected to") {
             Write-InfoLog "Successfully connected to $ip`:$port" -ForegroundColor Green
         }
@@ -620,6 +627,7 @@ function Invoke-AdbAutoConnect {
                 Write-InfoLog "Trying: adb connect $ip`:$port"
                 $result = Invoke-SafeCommand -Command { & $adbPath connect "$ip`:$port" } -ErrorMessage "Failed to connect to $ip" -ContinueOnError
                 Write-InfoLog $result
+                $global:LastAdbOperation = Get-Date
                 
                 if ($result -match "connected to") {
                     Write-InfoLog "Successfully connected to $ip`:$port" -ForegroundColor Green
@@ -671,6 +679,7 @@ function Invoke-AdbKillServer {
         Write-InfoLog $result
         Write-InfoLog "adb kill-server executed" 
         Write-Host "`nThe script might be a bit slow for a while." -ForegroundColor Green
+        $global:LastAdbOperation = Get-Date
     }
     catch {
         Write-ErrorLog "An error occurred while running adb kill-server." $_.Exception
