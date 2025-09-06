@@ -1656,33 +1656,68 @@ function Start-Scrcpy {
     }
 
     Write-InfoLog "Starting scrcpy session (Recording: $IsRecording, InitialPreset: $(
-        if ($InitialPresetName) {
-            $InitialPresetName
-        } else {'None'}))"
+    if ($InitialPresetName) {
+        $InitialPresetName
+    } else {'None'}))"
 
     do {
-        $relaunch = $false # Reset relaunch flag for each session
+        $relaunch = $false
         Write-DebugLog "Starting scrcpy session loop"
+        # 1. Check if device is selected
+        if ([string]::IsNullOrWhiteSpace($config.selectedDevice)) {
+            Write-DebugLog "No device selected, showing device selection immediately"
+            $selectedDevice = Show-DeviceSelection -adbPath $executables.AdbPath
+            if ($null -eq $selectedDevice) { 
+                $config.selectedDevice = ""
+                Save-Config $config
+                return 
+            }
+            $config.selectedDevice = $selectedDevice
+            Save-Config $config
+            Write-InfoLog "Selected device: $selectedDevice"
+        }
 
-        # 1. Validate selected device
-        if (-not [string]::IsNullOrEmpty($config.selectedDevice)) {
+        # 2. Validate selected device (only if we have one)
+        if (-not [string]::IsNullOrWhiteSpace($config.selectedDevice)) {
             Write-DebugLog "Validating device connection: $($config.selectedDevice)"
             $deviceList = Get-AdbDeviceList -adbPath $executables.AdbPath
             $device = $deviceList | Where-Object { $_.Serial -eq $config.selectedDevice } | Select-Object -First 1
             
             if (-not $device -or $device.State -ne 'device') {
-                if (-not [string]::IsNullOrEmpty($DeviceSerial)) {
-                    Write-ErrorLog "Provided device '$($config.selectedDevice)' is not connected or not in device state."
-                    return
-                } else {
-                    Write-ErrorLog "Device '$($config.selectedDevice)' is not connected or not in device state. Please select a new one."
-                    $config.selectedDevice = ""
-                    Start-Sleep -Seconds 2
+                Write-DebugLog "Device not ready, attempting to refresh..."
+                $maxRetries = 5
+                $retryCount = 0
+                $deviceReady = $false
+
+                while ($retryCount -lt $maxRetries -and -not $deviceReady) {
+                    $retryCount++
+                    Write-DebugLog "Waiting for device to become ready (attempt $retryCount/$maxRetries)..."
+                    Start-Sleep -Seconds 1
+
+                    $deviceList = Get-AdbDeviceList -adbPath $executables.AdbPath
+                    $device = $deviceList | Where-Object { $_.Serial -eq $config.selectedDevice } | Select-Object -First 1
+
+                    if ($device -and $device.State -eq 'device') {
+                        $deviceReady = $true
+                        Write-DebugLog "Device is now ready!"
+                    }
+                }
+                
+                if (-not $deviceReady) {
+                    if (-not [string]::IsNullOrEmpty($DeviceSerial)) {
+                        Write-ErrorLog "Provided device '$($config.selectedDevice)' is not connected or not in device state."
+                        return
+                    } else {
+                        Write-ErrorLog "Device '$($config.selectedDevice)' is not connected or not in device state. Please select a new one."
+                        $config.selectedDevice = ""
+                        Save-Config $config
+                        Start-Sleep -Seconds 2
+                        continue
+                    }
                 }
             }
         }
-        
-        # 2. Select Device if needed
+        # 3. Select Device if needed
         if ([string]::IsNullOrEmpty($config.selectedDevice)) {
             $selectedDevice = Show-DeviceSelection -adbPath $executables.AdbPath
             if ($null -eq $selectedDevice) { 
@@ -1705,7 +1740,7 @@ function Start-Scrcpy {
                 continue
             }
         }
-        # 3. Select Preset
+        # 4. Select Preset
         $selectedPreset = $null
         if ($currentPresetName) {
             Write-DebugLog "Looking for preset: $currentPresetName"
@@ -1761,7 +1796,7 @@ function Start-Scrcpy {
         Save-Config $config
         Write-InfoLog "Using preset: $currentPresetName"
 
-        # 4. Build Command Arguments
+        # 5. Build Command Arguments
         try {
             $finalArgs = Build-ScrcpyArguments -SelectedPreset $selectedPreset -SelectedDevice $config.selectedDevice
         }
@@ -1790,7 +1825,7 @@ function Start-Scrcpy {
             $finalArgs += "--record", "`"$fullPath`""
             Write-InfoLog "Recording enabled, output path: $fullPath"
         }
-        # 5. Launch scrcpy
+        # 6. Launch scrcpy
         if (-not $DisableClearHost) { Clear-Host }
         $deviceDisplayName = Get-DeviceDisplayName -adbPath $executables.AdbPath -deviceSerial $config.selectedDevice
         Write-Host "  STARTING SCRCPY SESSION" -ForegroundColor Cyan
@@ -1869,7 +1904,7 @@ function Start-Scrcpy {
             Write-ErrorLog "Failed to launch scrcpy." $_.Exception
         }
         
-        # 6. Post-Session Handling
+        # 7. Post-Session Handling
         switch ($process.ExitCode) {
             0 {
                 Write-InfoLog "scrcpy session ended."
