@@ -19,6 +19,9 @@
         - FFmpeg in PATH (optional, for MP4 remuxing)
         - Android device with USB debugging enabled
 
+.PARAMETER DeviceSerial
+    Optional. The ADB serial of the device to connect to. If not provided, 
+    the script will prompt for device selection.
 .PARAMETER Preset
     Optional. Launch scrcpy directly with the specified preset name.
     Supports fuzzy matching - will prompt for confirmation if an exact match isn't found.
