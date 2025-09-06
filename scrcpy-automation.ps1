@@ -113,7 +113,8 @@ function Write-DetailedLog {
     
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $logEntry = "[$timestamp] [$Level] $Message"
-    
+    $consoleOutput = "[$Level] $Message"
+
     if ($Exception) {
         $logEntry += " - Exception: $($Exception.Exception.Message)"
         $logEntry += " (Type: $($Exception.Exception.GetType().FullName))"
@@ -129,10 +130,10 @@ function Write-DetailedLog {
     }
     
     switch ($Level) {
-        "ERROR" { Write-Host $logEntry -ForegroundColor Red }
-        "WARN" { Write-Host $logEntry -ForegroundColor Yellow }
-        "DEBUG" { Write-Host $logEntry -ForegroundColor Magenta }
-        default { Write-Host $logEntry -ForegroundColor Green }
+        "ERROR" { Write-Host $consoleOutput -ForegroundColor Red }
+        "WARN"  { Write-Host $consoleOutput -ForegroundColor Yellow }
+        "DEBUG" { Write-Host $consoleOutput -ForegroundColor Magenta }
+        default { Write-Host $consoleOutput -ForegroundColor Green }
     }
 }
 
