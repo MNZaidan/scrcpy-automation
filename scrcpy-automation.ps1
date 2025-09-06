@@ -710,8 +710,12 @@ function Show-DeviceSelection {
         $menuResult  = Show-Menu -Title "Select a Device" -Options $options -Footer @("[ ↑/↓ ] Navigate", "[Enter] Select", "[ESC/X] Back")
         $choiceIndex = $menuResult.Index
 
-        if ($choiceIndex -eq -1 -or $choiceIndex -eq ($options.Count - 1)) {
-            Write-DebugLog "User canceled device selection"
+        if ($choiceIndex -eq -1) {
+            Write-DebugLog "User canceled device selection via ESC/X key"
+            return $null
+        }
+        elseif ($choiceIndex -eq ($options.Count - 1)) {
+            Write-DebugLog "User selected 'Back' option in device selection menu"
             return $null
         }
         elseif ($choiceIndex -eq 0) {
