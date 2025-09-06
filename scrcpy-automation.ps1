@@ -1862,7 +1862,7 @@ function Main {
     if (-not [string]::IsNullOrEmpty($Preset)) {
         Write-InfoLog "Searching for preset: '$Preset'"
     
-        $presetMatches = Find-Presets -SearchTerm $Preset -Presets $config.presets
+        $presetMatches = Find-Presets -SearchTerm $Preset -AllPresets $config.presets
         $targetPreset = $null
 
         if ($presetMatches.Count -gt 0) {
