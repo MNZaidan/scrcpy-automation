@@ -1973,7 +1973,7 @@ function Start-Scrcpy {
 function Main {
     param([string]$Preset)
     
-    Write-DebugLog "Running scrcpy Automation v$ScriptVersion"
+    Write-DebugLog "initializing scrcpy-Automation v$ScriptVersion"
     $executables = Find-Executables
     if (-not $executables.Success) { Read-Host "Press Enter to exit..."; return }
     
