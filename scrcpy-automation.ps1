@@ -735,7 +735,10 @@ function Show-DeviceSelection {
             $options += "Back"
         }
         else {
-            Write-DebugLog "Found $($deviceList.Count) devices"
+            Write-DebugLog "Found $($deviceList.Count) devices:"
+            foreach ($device in $deviceList) {
+                Write-DebugLog "  - $($device.Serial) [$($device.State)] $($device.Model)"
+            }
             $deviceList | ForEach-Object {
                 $displayText = if ($_.Model) { "$($_.Model) ($($_.Serial))" } else { $_.Serial }
                 if ($_.State -ne 'device') {
