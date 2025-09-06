@@ -53,6 +53,7 @@
     Launches the script with real-time scrcpy output capture enabled (more resource intensive).
 
 .LINK
+    scrcpy-automation: https://github.com/MNZaidan/scrcpy-automation
     scrcpy documentation: https://github.com/Genymobile/scrcpy
     FFmpeg download: https://ffmpeg.org/download.html
 #>
