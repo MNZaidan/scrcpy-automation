@@ -1583,10 +1583,10 @@ function Invoke-PresetManager {
 
 #region Miscellaneous functions
 function Find-Executables {
-    Write-DebugLog "Attempting to find scrcpy.exe and adb.exe..."
+    Write-DebugLog "Attempting to find scrcpy and adb..."
     try {
-        $scrcpyPath = (Get-Command scrcpy.exe -ErrorAction SilentlyContinue).Path
-        $adbPath = (Get-Command adb.exe -ErrorAction SilentlyContinue).Path
+        $scrcpyPath = (Get-Command scrcpy -ErrorAction SilentlyContinue).Path
+        $adbPath = (Get-Command adb -ErrorAction SilentlyContinue).Path
     }
     catch {
         Write-ErrorLog "Failed to query commands from PATH." $_.Exception
@@ -1599,7 +1599,7 @@ function Find-Executables {
         return [pscustomobject]@{ Success = $true; ScrcpyPath = $scrcpyPath; AdbPath = $adbPath }
     }
 
-    Write-ErrorLog "scrcpy.exe or adb.exe not found in your system's PATH."
+    Write-ErrorLog "scrcpy or adb not found in your system's PATH."
     return [pscustomobject]@{ Success = $false }
 }
 
