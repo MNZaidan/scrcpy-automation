@@ -1692,7 +1692,7 @@ function Start-Scrcpy {
             Write-InfoLog "Recording to: $fullPath"
             Write-Host "`nExit scrcpy to stop recording" -ForegroundColor Yellow
         }
-        Write-InfoLog "`nCommand: scrcpy $($finalArgs -join ' ')"
+        Write-InfoLog "Command: scrcpy $($finalArgs -join ' ')"
 
         try {
             Write-DebugLog "Launching scrcpy process"
