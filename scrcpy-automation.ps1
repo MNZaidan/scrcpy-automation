@@ -1594,8 +1594,8 @@ function Find-Executables {
     }
 
     if ($scrcpyPath -and $adbPath) {
-        Write-InfoLog "Found scrcpy: $scrcpyPath"
-        Write-InfoLog "Found adb: $adbPath"
+        Write-DebugLog "Found scrcpy: $scrcpyPath"
+        Write-DebugLog "Found adb: $adbPath"
         return [pscustomobject]@{ Success = $true; ScrcpyPath = $scrcpyPath; AdbPath = $adbPath }
     }
 
