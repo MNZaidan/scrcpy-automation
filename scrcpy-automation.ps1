@@ -624,7 +624,7 @@ function Invoke-AdbAutoConnect {
     }
 
     if (-not $found) {
-        Write-ErrorLog "No device could be connected using network discovery."
+        Write-WarnLog "No device could be connected using network discovery."
         Write-Host "Please ensure your device is connected to the same network and ADB over WiFi is enabled." -ForegroundColor Yellow
     }
     
@@ -686,7 +686,7 @@ function Show-DeviceSelection {
         $options = @("Refresh Device List", "ADB Options")
         
         if ($null -eq $deviceList -or $deviceList.Count -eq 0) {
-            Write-ErrorLog "No ADB devices found. Please connect a device and ensure USB debugging is enabled."
+            Write-WarnLog "No ADB devices found. Please connect a device and ensure USB debugging is enabled."
             Start-Sleep -Seconds 1
             $options += "Back"
         }
@@ -726,7 +726,7 @@ function Show-DeviceSelection {
             $selectedDevice = $deviceList[$selectedDeviceIndex].Serial
             
             if ($deviceList[$selectedDeviceIndex].State -ne 'device') {
-                Write-InfoLog "Device is in $($deviceList[$selectedDeviceIndex].State) state." -ForegroundColor Yellow
+                Write-WarnLog "Device is in $($deviceList[$selectedDeviceIndex].State) state."
                 Write-Host "It may take a moment to become ready..." -ForegroundColor Yellow
                 
                 $attempts = 0
