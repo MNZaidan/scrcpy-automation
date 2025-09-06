@@ -471,7 +471,9 @@ function Get-AdbDeviceList {
 function Get-DeviceDisplayName {
     param ([string]$adbPath, [string]$deviceSerial)
     
-    if ([string]::IsNullOrEmpty($deviceSerial)) { return "No device selected" }
+    if ([string]::IsNullOrWhiteSpace($deviceSerial)) { 
+        return "No device selected" 
+    }
     
     Start-Sleep -Milliseconds 500
     
