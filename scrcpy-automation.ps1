@@ -730,6 +730,7 @@ function Show-DeviceSelection {
         else {
             $selectedDeviceIndex = $choiceIndex - 2
             $selectedDevice = $deviceList[$selectedDeviceIndex].Serial
+            Write-DebugLog "User selected device: $selectedDevice (Index: $selectedDeviceIndex)"
             
             if ($deviceList[$selectedDeviceIndex].State -ne 'device') {
                 Write-WarnLog "Device is in $($deviceList[$selectedDeviceIndex].State) state."
@@ -874,12 +875,21 @@ function Get-Config {
 function Save-Config {
     param ($config)
     try {
+        $deviceValue = if ($null -eq $config.selectedDevice) { 
+            "" 
+        } elseif ($config.selectedDevice -is [array]) {
+            $firstValid = $config.selectedDevice | Where-Object { -not [string]::IsNullOrEmpty($_) } | Select-Object -First 1
+            if ($null -eq $firstValid) { "" } else { $firstValid.ToString() }
+        } else {
+            $config.selectedDevice.ToString()
+        }
+        
         $sanitizedConfig = [ordered]@{
             recordingPath     = $config.recordingPath
             recordingFormat   = $config.recordingFormat
             lastUsedPreset    = $config.lastUsedPreset
             quickLaunchPreset = $config.quickLaunchPreset
-            selectedDevice    = $config.selectedDevice
+            selectedDevice    = $deviceValue
             presets           = @()
         }
         
@@ -1612,10 +1622,10 @@ function Start-Scrcpy {
         
         # 2. Select Device if needed
         if ([string]::IsNullOrEmpty($config.selectedDevice)) {
-            Write-DebugLog "No device selected, prompting user for selection"
             $selectedDevice = Show-DeviceSelection -adbPath $executables.AdbPath
             if ($null -eq $selectedDevice) { 
-                Write-InfoLog "User canceled device selection"
+                $config.selectedDevice = ""
+                Save-Config $config
                 return 
             }
             $config.selectedDevice = $selectedDevice
@@ -1931,6 +1941,9 @@ function Main {
             $selectedDevice = Show-DeviceSelection -adbPath $executables.AdbPath -currentDevice $config.selectedDevice
             if ($null -ne $selectedDevice) {
                 $config.selectedDevice = $selectedDevice
+                Save-Config $config
+            } else {
+                $config.selectedDevice = ""
                 Save-Config $config
             }
         }
