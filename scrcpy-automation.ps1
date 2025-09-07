@@ -1985,7 +1985,18 @@ function Start-Scrcpy {
 function Main {
     param([string]$Preset)
     
-    Write-DebugLog "initializing scrcpy-Automation v$ScriptVersion"
+    Write-DebugLog "initializing scrcpy-Automation v$ScriptVersion with parameters:"
+    if (-not [string]::IsNullOrEmpty($DeviceSerial)) { Write-DebugLog "-DeviceSerial: $DeviceSerial" }
+    if (-not [string]::IsNullOrEmpty($Preset)) { Write-DebugLog "-Preset: $Preset" }
+    if ($Log) { Write-DebugLog "-Log: $Log" }
+    if ($NoClear) { Write-DebugLog "-NoClear: $NoClear" }
+    if ($RealTimeCapture) { Write-DebugLog "-RealTimeCapture: $RealTimeCapture" }
+    if (-not [string]::IsNullOrEmpty($ConfigPath) -and $ConfigPath -ne (Join-Path $PSScriptRoot "scrcpy-config.json")) { 
+        Write-DebugLog "-ConfigPath: $ConfigPath" 
+    }
+    if (-not [string]::IsNullOrEmpty($LogPath) -and $LogPath -ne (Join-Path $PSScriptRoot "scrcpy-automation.log")) { 
+        Write-DebugLog "-LogPath: $LogPath" 
+    }
     $executables = Find-Executables
     if (-not $executables.Success) { Read-Host "Press Enter to exit..."; return }
     
