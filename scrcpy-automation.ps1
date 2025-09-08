@@ -515,11 +515,11 @@ function Get-DeviceDisplayName {
     $deviceSerial = $deviceSerial.Trim()
     
     if ([string]::IsNullOrWhiteSpace($deviceSerial)) { 
-        Write-DebugLog "No device serial selected"
+        Write-DebugLog "No device selected"
         return "No device selected" 
     }
     
-    Write-DebugLog "Checking status for device: '$deviceSerial'"
+    Write-DebugLog "Checking status for selected device: '$deviceSerial'"
     
     $device = $null
     $retryCount = 0
@@ -533,13 +533,13 @@ function Get-DeviceDisplayName {
         
         if ($null -eq $device) {
             $retryCount++
-            Write-DebugLog "Device not found in 'device' state (attempt $retryCount/$maxRetries)"
+            Write-DebugLog "Selected device not found in 'device' state (attempt $retryCount/$maxRetries)"
             Start-Sleep -Milliseconds 500
         }
     }
     
     if ($device) {
-        Write-DebugLog "Device found with state: $($device.State)"
+        Write-DebugLog "Selected device found with state: $($device.State)"
         if ($device.Model) {
             return "$($device.Model) ($($device.Serial))"
         }
@@ -550,10 +550,10 @@ function Get-DeviceDisplayName {
     else { 
         $anyStateDevice = (Get-AdbDeviceList -adbPath $adbPath) | Where-Object { $_.Serial.Trim() -eq $deviceSerial } | Select-Object -First 1
         if ($anyStateDevice) {
-            Write-DebugLog "Device found but in state: $($anyStateDevice.State)"
+            Write-DebugLog "Selected device found but in state: $($anyStateDevice.State)"
             return "$deviceSerial [$($anyStateDevice.State)]"
         }
-        Write-DebugLog "Device not found"
+        Write-DebugLog "Selected device not found"
         return "$deviceSerial (disconnected)" 
     }
 }
