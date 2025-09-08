@@ -474,7 +474,6 @@ function Get-AdbDeviceList {
     try {
         $adbOutput = Invoke-SafeCommand -Command { & $adbPath devices -l } -ErrorMessage "Failed to run adb devices command"
         if ($null -ne $adbOutput) {
-            Write-DebugLog "ADB devices output:"
             $adbOutput | ForEach-Object {
                 if ($_ -is [string] -and $_.Trim() -ne "") {
                     Write-DebugLog "  $($_.Trim())"
