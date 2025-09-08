@@ -512,36 +512,48 @@ function Get-AdbDeviceList {
 function Get-DeviceDisplayName {
     param ([string]$adbPath, [string]$deviceSerial)
     
+    $deviceSerial = $deviceSerial.Trim()
+    
     if ([string]::IsNullOrWhiteSpace($deviceSerial)) { 
+        Write-DebugLog "No device serial selected"
         return "No device selected" 
     }
     
-    
-    
+    Write-DebugLog "Checking status for device: '$deviceSerial'"
     
     $device = $null
     $retryCount = 0
     $maxRetries = 3
     
     while ($retryCount -lt $maxRetries -and $null -eq $device) {
-        $device = (Get-AdbDeviceList -adbPath $adbPath) | Where-Object { $_.Serial -eq $deviceSerial } | Select-Object -First 1
+        $deviceList = Get-AdbDeviceList -adbPath $adbPath
+        $device = $deviceList | Where-Object { 
+            $_.Serial.Trim() -eq $deviceSerial -and $_.State -eq 'device'
+        } | Select-Object -First 1
+        
         if ($null -eq $device) {
             $retryCount++
-            Start-Sleep -Milliseconds 300
+            Write-DebugLog "Device not found in 'device' state (attempt $retryCount/$maxRetries)"
+            Start-Sleep -Milliseconds 500
         }
     }
     
     if ($device) {
+        Write-DebugLog "Device found with state: $($device.State)"
         if ($device.Model) {
-            $status = if ($device.State -ne 'device') { " [$($device.State)]" } else { "" }
-            return "$($device.Model) ($($device.Serial))$status"
+            return "$($device.Model) ($($device.Serial))"
         }
         else {
-            $status = if ($device.State -ne 'device') { " [$($device.State)]" } else { "" }
-            return "$($device.Serial)$status"
+            return "$($device.Serial)"
         }
     }
     else { 
+        $anyStateDevice = (Get-AdbDeviceList -adbPath $adbPath) | Where-Object { $_.Serial.Trim() -eq $deviceSerial } | Select-Object -First 1
+        if ($anyStateDevice) {
+            Write-DebugLog "Device found but in state: $($anyStateDevice.State)"
+            return "$deviceSerial [$($anyStateDevice.State)]"
+        }
+        Write-DebugLog "Device not found"
         return "$deviceSerial (disconnected)" 
     }
 }
@@ -941,9 +953,9 @@ function Save-Config {
             "" 
         } elseif ($config.selectedDevice -is [array]) {
             $firstValid = $config.selectedDevice | Where-Object { -not [string]::IsNullOrEmpty($_) } | Select-Object -First 1
-            if ($null -eq $firstValid) { "" } else { $firstValid.ToString() }
+            if ($null -eq $firstValid) { "" } else { $firstValid.ToString().Trim() }
         } else {
-            $config.selectedDevice.ToString()
+            $config.selectedDevice.ToString().Trim()
         }
         
         $sanitizedConfig = [ordered]@{
