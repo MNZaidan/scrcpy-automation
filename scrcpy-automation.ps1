@@ -473,6 +473,14 @@ function Get-AdbDeviceList {
     $deviceList = @()
     try {
         $adbOutput = Invoke-SafeCommand -Command { & $adbPath devices -l } -ErrorMessage "Failed to run adb devices command"
+        if ($null -ne $adbOutput) {
+            Write-DebugLog "ADB devices output:"
+            $adbOutput | ForEach-Object {
+                if ($_ -is [string] -and $_.Trim() -ne "") {
+                    Write-DebugLog "  $($_.Trim())"
+                }
+            }
+        }
         if ($null -eq $adbOutput) { return $null }
     }
     catch {
@@ -735,10 +743,6 @@ function Show-DeviceSelection {
             $options += "Back"
         }
         else {
-            Write-DebugLog "Found $($deviceList.Count) devices:"
-            foreach ($device in $deviceList) {
-                Write-DebugLog "  - $($device.Serial) [$($device.State)] $($device.Model)"
-            }
             $deviceList | ForEach-Object {
                 $displayText = if ($_.Model) { "$($_.Model) ($($_.Serial))" } else { $_.Serial }
                 if ($_.State -ne 'device') {
