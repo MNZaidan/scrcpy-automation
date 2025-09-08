@@ -2060,6 +2060,7 @@ function Main {
         if ($menuResult.Key -in @('Escape', 'x')) { Write-Host "Exiting..."; return }
         $selectedIndex = $menuResult.Index
         $chosenOption = $options[$selectedIndex]
+        Write-DebugLog "User selected main menu option: $chosenOption"
 
         if ($chosenOption.StartsWith("Device")) {
             $selectedDevice = Show-DeviceSelection -adbPath $executables.AdbPath -currentDevice $config.selectedDevice
