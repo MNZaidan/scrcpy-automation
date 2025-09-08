@@ -516,7 +516,8 @@ function Get-DeviceDisplayName {
         return "No device selected" 
     }
     
-    Start-Sleep -Milliseconds 300
+    
+    
     
     $device = $null
     $retryCount = 0
