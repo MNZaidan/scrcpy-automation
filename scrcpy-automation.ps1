@@ -1482,18 +1482,15 @@ function Invoke-PresetManager {
                         Save-Config $config
                     }
                 }
-                elseif ($selectedIndex -eq 1) {
-                    # Search Presets
+                elseif ($selectedIndex -eq 1) { # Search Presets
                     Write-DebugLog "User selected 'Search Presets...'"  
                     Invoke-PresetSearch -config $config
                 }
-                elseif ($selectedIndex -eq ($menuOptions.Count - 1)) {
-                    # Back
+                elseif ($selectedIndex -eq ($menuOptions.Count - 1)) { # Back
                     Write-DebugLog "User selected 'Back'"
                     return $config
                 }
-                else {
-                    # Edit Preset
+                else { # Edit Preset
                     Write-DebugLog "User is editing $($selectedPreset.name)"
                     $presetIndex = $selectedIndex - 2
                     $selectedPreset = $config.presets[$presetIndex]
@@ -1505,8 +1502,7 @@ function Invoke-PresetManager {
                     }
                 }
             }
-            46 {
-                # Delete
+            46 { # Delete
                 Write-DebugLog "User is deleting $($selectedPreset.name)"
                 if ($selectedIndex -gt 1 -and $selectedIndex -lt ($menuOptions.Count - 1)) {
                     $presetIndex = $selectedIndex - 2
@@ -1521,12 +1517,12 @@ function Invoke-PresetManager {
                     }
                 }
             }
-            33 {
-                # PageUp
-                Write-DebugLog "User is moving up $($selectedPreset.name)"
+            33 {  # PageUp
                 if ($selectedIndex -gt 2) {
-                    $presetToMove = $config.presets[$selectedIndex - 2]
-                    $newIndex     = $selectedIndex - 3
+                    $currentIndex = $selectedIndex - 2
+                    $presetToMove = $config.presets[$currentIndex]
+                    $newIndex = $currentIndex - 1
+                    Write-DebugLog "User is moving preset '$($presetToMove.name)' from position $($currentIndex + 1) to position $($newIndex + 1)"
                     $tempPresets  = [System.Collections.Generic.List[object]]::new($config.presets)
                     $tempPresets.RemoveAt($selectedIndex - 2)
                     $tempPresets.Insert($newIndex, $presetToMove)
@@ -1535,12 +1531,12 @@ function Invoke-PresetManager {
                     $selectedIndex--
                 }
             }
-            34 {
-                # PageDown
-                Write-DebugLog "User is moving down $($selectedPreset.name)"
+            34 {  # PageDown
                 if ($selectedIndex -gt 1 -and $selectedIndex -lt ($menuOptions.Count - 2)) {
-                    $presetToMove = $config.presets[$selectedIndex - 2]
-                    $newIndex     = $selectedIndex - 1
+                    $currentIndex = $selectedIndex - 2
+                    $presetToMove = $config.presets[$currentIndex]
+                    $newIndex = $currentIndex + 1
+                    Write-DebugLog "User is moving preset '$($presetToMove.name)' from position $($currentIndex + 1) to position $($newIndex + 1)"
                     $tempPresets  = [System.Collections.Generic.List[object]]::new($config.presets)
                     $tempPresets.RemoveAt($selectedIndex - 2)
                     $tempPresets.Insert($newIndex, $presetToMove)
@@ -1549,8 +1545,7 @@ function Invoke-PresetManager {
                     $selectedIndex++
                 }
             }
-            68 {
-                # 'D' key - Duplicate
+            68 { # 'D' key - Duplicate
                 Write-DebugLog "User is duplicating $($selectedPreset.name)"
                 if ($selectedIndex -gt 1 -and $selectedIndex -lt ($menuOptions.Count - 1)) {
                     $presetIndex    = $selectedIndex - 2
@@ -1567,8 +1562,7 @@ function Invoke-PresetManager {
                     }
                 }
             }
-            70 {
-                # 'F' key - Favorite
+            70 { # 'F' key - Favorite
                 Write-DebugLog "User is toggling favorite for $($selectedPreset.name)"
                 if ($selectedIndex -gt 1 -and $selectedIndex -lt ($menuOptions.Count - 1)) {
                     $presetIndex = $selectedIndex - 2
@@ -1590,8 +1584,7 @@ function Invoke-PresetManager {
                     Save-Config $config
                 }
             }
-            81 {
-                # 'Q' key - Quick Launch
+            81 { # 'Q' key - Quick Launch
                 Write-DebugLog "User is setting $($selectedPreset.name) as the Quick Launch preset."
                 if ($selectedIndex -gt 1 -and $selectedIndex -lt ($menuOptions.Count - 1)) {
                     $presetIndex    = $selectedIndex - 2
