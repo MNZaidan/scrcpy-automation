@@ -621,12 +621,6 @@ function Invoke-AdbConnect {
         $result = Invoke-SafeCommand -Command { & $adbPath connect "$ip`:$port" } -ErrorMessage "Failed to run adb connect command" -ContinueOnError
         Write-InfoLog $result
         $global:LastAdbOperation = Get-Date
-        if ($result -match "connected to") {
-            Write-InfoLog "Successfully connected to $ip`:$port" -ForegroundColor Green
-        }
-        else {
-            Write-ErrorLog "Failed to connect to $ip`:$port - $result"
-        }
     }
     catch {
         Write-ErrorLog "An error occurred while running adb connect." $_.Exception
