@@ -794,7 +794,7 @@ function Show-DeviceSelection {
         }
         else {
             $selectedDeviceIndex = $choiceIndex - 2
-            $selectedDevice = $deviceList[$selectedDeviceIndex].Serial
+            $selectedDevice = $deviceList[$selectedDeviceIndex].Serial.Trim()
             Write-DebugLog "User selected device: $selectedDevice (Index: $selectedDeviceIndex)"
             
             if ($deviceList[$selectedDeviceIndex].State -ne 'device') {
@@ -1715,6 +1715,7 @@ function Start-Scrcpy {
 
         # 2. Validate selected device (only if we have one)
         if (-not [string]::IsNullOrWhiteSpace($config.selectedDevice)) {
+            $config.selectedDevice = $config.selectedDevice.Trim()
             Write-DebugLog "Validating device connection: $($config.selectedDevice)"
             $deviceList = Get-AdbDeviceList -adbPath $executables.AdbPath
             $device = $deviceList | Where-Object { $_.Serial -eq $config.selectedDevice } | Select-Object -First 1
@@ -2007,7 +2008,10 @@ function Main {
     param([string]$Preset)
     
     Write-DebugLog "initializing scrcpy-Automation v$ScriptVersion with parameters:"
-    if (-not [string]::IsNullOrEmpty($DeviceSerial)) { Write-DebugLog "-DeviceSerial: $DeviceSerial" }
+    if (-not [string]::IsNullOrEmpty($DeviceSerial)) {
+        $config.selectedDevice = $DeviceSerial.Trim()
+        Write-DebugLog "-DeviceSerial: $DeviceSerial" 
+    }
     if (-not [string]::IsNullOrEmpty($Preset)) { Write-DebugLog "-Preset: $Preset" }
     if ($Log) { Write-DebugLog "-Log: $Log" }
     if ($NoClear) { Write-DebugLog "-NoClear: $NoClear" }
