@@ -1710,6 +1710,7 @@ function Start-Scrcpy {
             $device = $deviceList | Where-Object { $_.Serial -eq $config.selectedDevice } | Select-Object -First 1
             
             if (-not $device -or $device.State -ne 'device') {
+                Write-DebugLog "Device validation failed. Device found: $($null -ne $device), State: $($device.State)"
                 Write-DebugLog "Device not ready, attempting to refresh..."
                 $maxRetries = 5
                 $retryCount = 0
