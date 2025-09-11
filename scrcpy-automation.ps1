@@ -464,6 +464,17 @@ function Read-Input {
         }
     }
 }
+
+function Wait-Enter {
+    Write-Host "Press Enter to continue..." -NoNewline
+    while ($true) {
+        $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        if ($key.VirtualKeyCode -eq 13) {  # Enter key
+            Write-Host ""
+            break
+        }
+    }
+}
 #endregion
 
 #region ADB Device Management Functions
@@ -574,7 +585,7 @@ function Invoke-AdbTcpip {
     catch {
         Write-ErrorLog "An error occurred while running adb tcpip." $_.Exception
     }
-    Read-Host "Press Enter to continue..."
+    Wait-Enter
 }
 
 function Invoke-AdbPair {
@@ -598,7 +609,7 @@ function Invoke-AdbPair {
     catch {
         Write-ErrorLog "An error occurred while running adb pair." $_.Exception
     }
-    Read-Host "Press Enter to continue..."
+    Wait-Enter
 }
 
 function Invoke-AdbConnect {
@@ -625,7 +636,7 @@ function Invoke-AdbConnect {
     catch {
         Write-ErrorLog "An error occurred while running adb connect." $_.Exception
     }
-    Read-Host "Press Enter to continue..."
+    Wait-Enter
 }
 
 function Invoke-AdbAutoConnect {
@@ -684,8 +695,7 @@ function Invoke-AdbAutoConnect {
         Write-WarnLog "No device could be connected using network discovery."
         Write-Host "Please ensure your device is connected to the same network and ADB over WiFi is enabled." -ForegroundColor Yellow
     }
-    
-    Read-Host "Press Enter to continue..."
+    Wait-Enter
 }
 
 function Invoke-AdbKillServer {
@@ -702,7 +712,7 @@ function Invoke-AdbKillServer {
     catch {
         Write-ErrorLog "An error occurred while running adb kill-server." $_.Exception
     }
-    Read-Host "Press Enter to continue..."
+    Wait-Enter
 }
 
 function Show-AdbOptionsMenu {
@@ -1838,7 +1848,7 @@ function Start-Scrcpy {
             $recordingPath = $config.recordingPath
             if (-not (Test-Path $recordingPath)) {
                 Write-ErrorLog "Recording path '$recordingPath' does not exist. Please set a valid path."
-                Read-Host "Press Enter to continue..."
+                Wait-Enter
                 return
             }
             $fileExt         = "mkv"
