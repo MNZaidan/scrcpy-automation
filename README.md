@@ -61,7 +61,7 @@ choco install scrcpy adb ffmpeg
 1. Download and install scrcpy.
 2. Download and install Android Platform Tools (This shouldn't be necessary if you have installed scrcpy properly).
 3. Download and install FFmpeg (optional for MP4 remuxing).
-4. [Add the installation directories for scrcpy, ADB, and FFmpeg to your system's PATH environment variable.](https://windowsloop.com/how-to-add-to-windows-path/)
+4. Add the installation directories for scrcpy, ADB, and FFmpeg to your [system's PATH environment variable.](https://windowsloop.com/how-to-add-to-windows-path/)
 
 ### 2. Script Installation
 
