@@ -99,14 +99,15 @@ These options can be found under the select device menu.
 > Wireless ADB connections require that your device and computer are on the same network.
 
 - **Auto Connect**: Automatically connects wirelessly to available TCP-IP devices using Get-NetNeighbor or ARP table scan. If these fails, you can try connecting manually or using pairing.
-- **Connect**: Connect to a device wirelessly manually using a TCP-IP enabled device's IP address and port.
+- **Connect (Manual)**: Connect to a device wirelessly manually using a TCP-IP enabled device's IP address and port.
 - **Pair**: Connect to a device wirelessly using a [wireless debugging pairing code](https://developer.android.com/tools/adb#connect-to-a-device-over-wi-fi).
 - **TCP-IP**: enable ADB over TCP-IP connection to a USB connected device.
 - **Kill ADB Server**: Stops the ADB server if it's running to fix connection issues. Running any ADB command will restart the server.
 
 ### Preset Management
 
-- You can use the pre-made `scrcpy-config.json` file included in the [releases page](https://github.com/MNZaidan/scrcpy-automation/releases/latest) or create your own from scratch.
+>[!Note]
+>You can use the pre-made `scrcpy-config.json` file included in the [releases page](https://github.com/MNZaidan/scrcpy-automation/releases/latest) or create your own from scratch.
 - Create new presets with custom parameters.
 - Add tags, reorder, duplicate or edit existing presets.
 - Organize presets into categories by using - as a prefix and - as a suffix in preset names. (e.g., `-Gaming-`, `-Video-`, etc.)
