@@ -119,19 +119,6 @@ The script uses a `scrcpy-config.json` file to store:
 
 This file is automatically created in the script's directory on first run if it doesn't exist.
 
-## Included Presets
-
-The script includes a variety of pre-configured presets to get you started, feel free to duplicate, edit or remove:
-
-- **Just Works (Recommended)**: Balanced settings for most users.
-- **Battery Saver**: Lower quality settings to conserve device battery.
-- **Game Optimization**: High-performance settings for gaming.
-- **Recording Preset**: Optimized for high-quality recordings with touch indicators.
-- **Audio-Only Control**: Control device with audio but no video to save bandwidth.
-- **Virtual Display Examples**: Demonstrates virtual display creation with specific apps.
-- **Template Presets**: Customizable templates for video, social media, gaming, and debugging.
-
-
 ## Troubleshooting
 Please refer to the official scrcpy Github documentation for more information: [scrcpy GitHub](https://github.com/Genymobile/scrcpy)
 
