@@ -1205,12 +1205,12 @@ function Show-PresetEditor {
         @{ Name = 'description';    Prompt = 'Description' },
         @{ Name = 'tags';           Prompt = 'Tags (comma-separated)' },
         @{ Name = 'favorite';       Prompt = 'Favorite (true/false)' },
-        @{ Name = 'resolution';     Prompt = 'Resolution [-m] (e.g., 1080)' },
+        @{ Name = 'resolution';     Prompt = 'Max Resolution [-m] (e.g., 1080)' },
         @{ Name = 'videoCodec';     Prompt = 'Video Codec [--video-codec] (h264, h265, av1)' },
-        @{ Name = 'videoBitrate';   Prompt = 'Video Bitrate [--video-bit-rate] (e.g., 8M, 15M)' },
+        @{ Name = 'videoBitrate';   Prompt = 'Video Bitrate [--video-bit-rate] (Mbps, e.g., 8M, 15M)' },
         @{ Name = 'videoBuffer';    Prompt = 'Video Buffer [--video-buffer] (ms)' },
         @{ Name = 'audioCodec';     Prompt = 'Audio Codec [--audio-codec] (opus, aac, flac)' },
-        @{ Name = 'audioBitrate';   Prompt = 'Audio Bitrate [--audio-bit-rate] (e.g., 128K, 196K)' },
+        @{ Name = 'audioBitrate';   Prompt = 'Audio Bitrate [--audio-bit-rate] (Kbps, e.g., 128K, 196K)' },
         @{ Name = 'audioBuffer';    Prompt = 'Audio Buffer [--audio-buffer] (ms)' },
         @{ Name = 'otherOptions';   Prompt = 'Other scrcpy arguments' }
     )
