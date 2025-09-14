@@ -38,7 +38,7 @@
     },
     {
       "name": "scrcpy Defaults",
-      "description": "if the option is empty, it will use the default",
+      "description": "if the option is empty, it will use this default",
       "tags": "default",
       "videoCodec": "h264",
       "videoBitrate": "8M",
