@@ -80,10 +80,10 @@ param (
     [Parameter(Mandatory = $false, HelpMessage = "Specify a custom path for the log file.")]
     [string]$LogPath,
     [Parameter(Mandatory = $false, HelpMessage = "Maximum log file size in KB before rotation.")]
-    [int]$LogMaxSize = 2048,
+    [int]$LogMaxSize = 50,
     [Parameter(Mandatory = $false, HelpMessage = "Percentage of lines to remove when rotating log (0-100).")]
     [ValidateRange(0,100)]
-    [int]$LogTrimPercentage = 10
+    [int]$LogTrimPercentage = 15
 )
 #endregion
 
@@ -1145,10 +1145,10 @@ function Show-RecordingOptions {
     }
 }
 
-function Test-IsCategory {
+function Find-IsCategory {
     param ([psobject]$Preset)
     if ($null -eq $Preset -or -not $Preset.PSObject.Properties.Name.Contains('name')) { return $false }
-    return $Preset.name -like "- * -"
+    return $Preset.name -like "-*-"
 }
 
 function Get-FormattedPresetList {
@@ -1318,7 +1318,7 @@ function Find-Presets {
     )
 
     if ([string]::IsNullOrWhiteSpace($SearchTerm)) {
-        return $AllPresets | Where-Object { -not (Test-IsCategory -Preset $_) }
+        return $AllPresets | Where-Object { -not (Find-IsCategory -Preset $_) }
     }
 
     $searchTermLower = $SearchTerm.ToLower()
@@ -1327,7 +1327,7 @@ function Find-Presets {
     $results = @()
     
     foreach ($preset in $AllPresets) {
-        if (Test-IsCategory -Preset $preset) { continue }
+        if (Find-IsCategory -Preset $preset) { continue }
         
         $nameLower = if ($preset.name) { $preset.name.ToLower() } else { "" }
         $descLower = if ($preset.description) { $preset.description.ToLower() } else { "" }
@@ -1480,7 +1480,7 @@ function Invoke-PresetManager {
         $menuOptions   = @("Add New Preset or Category", "Search Presets...") + $presetOptions + @("Back")
         
         $categoryIndices = for ($i = 0; $i -lt $config.presets.Count; $i++) {
-            if (Test-IsCategory -Preset $config.presets[$i]) {
+            if (Find-IsCategory -Preset $config.presets[$i]) {
                 $i + 2
             }
         }
@@ -1625,7 +1625,7 @@ function Invoke-PresetManager {
                 if ($selectedIndex -gt 1 -and $selectedIndex -lt ($menuOptions.Count - 1)) {
                     $presetIndex    = $selectedIndex - 2
                     $selectedPreset = $config.presets[$presetIndex]
-                    if (Test-IsCategory -Preset $selectedPreset) {
+                    if (Find-IsCategory -Preset $selectedPreset) {
                         Write-Host "Categories cannot be set as the Quick Launch preset." -ForegroundColor Red
                         Start-Sleep -Seconds 2
                         continue
@@ -1824,7 +1824,7 @@ function Start-Scrcpy {
         if (-not $selectedPreset) {
             Write-DebugLog "No preset specified, showing selection menu"
             $presetOptions   = Get-FormattedPresetList -Config $config
-            $categoryIndices = for ($i = 0; $i -lt $config.presets.Count; $i++) { if (Test-IsCategory -Preset $config.presets[$i]) { $i + 1 } }
+            $categoryIndices = for ($i = 0; $i -lt $config.presets.Count; $i++) { if (Find-IsCategory -Preset $config.presets[$i]) { $i + 1 } }
             
             while ($true) {
                 $menuOptions  = @("Search Presets...") + $presetOptions + @("Back")
