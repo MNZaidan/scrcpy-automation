@@ -1237,17 +1237,17 @@ function Show-PresetEditor {
     }
 
     $fields = @(
-        @{ Name = 'name';           Prompt = "Preset Name (use '- Name -' for a category)" },
+        @{ Name = 'name';           Prompt = "Preset or -Category- name" },
         @{ Name = 'description';    Prompt = 'Description' },
         @{ Name = 'tags';           Prompt = 'Tags (comma-separated)' },
         @{ Name = 'favorite';       Prompt = 'Favorite (true/false)' },
         @{ Name = 'resolution';     Prompt = 'Max Resolution [-m] (e.g., 1080)' },
-        @{ Name = 'videoCodec';     Prompt = 'Video Codec [--video-codec] (h264, h265, av1)' },
-        @{ Name = 'videoBitrate';   Prompt = 'Video Bitrate [--video-bit-rate] (Mbps, e.g., 8M, 15M)' },
-        @{ Name = 'videoBuffer';    Prompt = 'Video Buffer [--video-buffer] (ms)' },
-        @{ Name = 'audioCodec';     Prompt = 'Audio Codec [--audio-codec] (opus, aac, flac)' },
-        @{ Name = 'audioBitrate';   Prompt = 'Audio Bitrate [--audio-bit-rate] (Kbps, e.g., 128K, 196K)' },
-        @{ Name = 'audioBuffer';    Prompt = 'Audio Buffer [--audio-buffer] (ms)' },
+        @{ Name = 'videoCodec';     Prompt = '[--video-codec] (h264, h265, av1)' },
+        @{ Name = 'videoBitrate';   Prompt = '[--video-bit-rate] (e.g., 8M)' },
+        @{ Name = 'videoBuffer';    Prompt = '[--video-buffer] (ms)' },
+        @{ Name = 'audioCodec';     Prompt = '[--audio-codec] (opus, aac, flac)' },
+        @{ Name = 'audioBitrate';   Prompt = '[--audio-bit-rate] (e.g., 128K)' },
+        @{ Name = 'audioBuffer';    Prompt = '[--audio-buffer] (ms)' },
         @{ Name = 'otherOptions';   Prompt = 'Other scrcpy arguments' }
     )
 
