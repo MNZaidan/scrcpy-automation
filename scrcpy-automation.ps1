@@ -1251,23 +1251,54 @@ function Show-PresetEditor {
         @{ Name = 'otherOptions';   Prompt = 'Other scrcpy arguments' }
     )
 
-    $maxLength = ($fields.Prompt | Measure-Object -Maximum -Property Length).Maximum
+    $maxPromptLength = ($fields.Prompt | Measure-Object -Maximum -Property Length).Maximum
     $currentField = 0
     while ($true) {
         if (-not $DisableClearHost) { Clear-Host }
         Write-Host "$title`n" -ForegroundColor Cyan
         
+        $terminalWidth = $Host.UI.RawUI.BufferSize.Width
+        $valueStartColumn = $maxPromptLength + 6  # 3 spaces + prompt + ": "
+        $maxValueWidth = $terminalWidth - $valueStartColumn - 1
+        
         for ($i = 0; $i -lt $fields.Count; $i++) {
             $field = $fields[$i]
-            $paddedPrompt = "$($field.Prompt): ".PadRight($maxLength + 2)
-            $displayValue = if ($null -ne $preset.($field.Name)) { $preset.($field.Name) } else { "[Empty]" }
-            $line = "   $paddedPrompt $displayValue"
+            $value = if ($null -ne $preset.($field.Name)) { $preset.($field.Name) } else { "[Empty]" }
             
-            if ($i -eq $currentField) {
-                Write-Host $line -ForegroundColor Black -BackgroundColor White
+            $wrappedValues = @()
+            if ($value.Length -gt $maxValueWidth) {
+                $words = $value -split ' '
+                $currentLine = ""
+                
+                foreach ($word in $words) {
+                    if (($currentLine.Length + $word.Length + 1) -le $maxValueWidth) {
+                        $currentLine += if ($currentLine -eq "") { $word } else { " $word" }
+                    } else {
+                        if ($currentLine -ne "") { $wrappedValues += $currentLine }
+                        $currentLine = $word
+                    }
+                }
+                if ($currentLine -ne "") { $wrappedValues += $currentLine }
+            } else {
+                $wrappedValues = @($value)
             }
-            else { Write-Host $line }
+            
+            for ($lineIndex = 0; $lineIndex -lt $wrappedValues.Count; $lineIndex++) {
+                $lineText = if ($lineIndex -eq 0) {
+                    "$($field.Prompt): ".PadRight($maxPromptLength + 2) + $wrappedValues[$lineIndex]
+                } else {
+                    "".PadRight($maxPromptLength + 2) + $wrappedValues[$lineIndex]
+                }
+                
+                if ($i -eq $currentField) {
+                    Write-Host "   $lineText" -ForegroundColor Black -BackgroundColor White
+                } else {
+                    Write-Host "   $lineText"
+                }
+            }
+            
         }
+        
         Write-Host ""
         Write-Host "[↑/↓]  Navigate  |  [Enter]  Edit" -ForegroundColor Blue
         Write-Host "[ S ]  Save      |  [ESC/X]  Cancel" -ForegroundColor Blue
