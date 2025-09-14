@@ -405,18 +405,19 @@ function Show-Menu {
 function Read-Input {
     param (
         [string]$Prompt,
-        [string]$DefaultValue = ""
+        [string]$DefaultValue = "",
+        [switch]$HideDefaultValue
     )
 
     $userInput = [System.Text.StringBuilder]::new($DefaultValue)
     $cursorIndex = $DefaultValue.Length
     
     Write-Host "`n$Prompt" -NoNewline -ForegroundColor Yellow
-    if (-not [string]::IsNullOrEmpty($DefaultValue)) {
-        Write-Host " (Default: '$DefaultValue'): " -NoNewline -ForegroundColor Gray
+    if (-not [string]::IsNullOrEmpty($DefaultValue) -and -not $HideDefaultValue) {
+        Write-Host " (Default: '$DefaultValue'): " -NoNewline -ForegroundColor Green
     }
     else {
-        Write-Host ": " -NoNewline
+        Write-Host ": " -NoNewline -ForegroundColor Green
     }
 
     $promptPosition = $Host.UI.RawUI.CursorPosition
@@ -628,9 +629,9 @@ function Invoke-AdbPair {
     param ([string]$adbPath)
     Write-Host "`nWarning: This is for pairing a device wirelessly for the first time." -ForegroundColor Yellow
     Write-Host "You will need to enter the device's IP address and pairing code." -ForegroundColor Yellow
-    $ip = Read-Input -Prompt "Enter device IP address" -DefaultValue "192.168.1.100"
+    $ip = Read-Input -Prompt "Enter device IP address" -DefaultValue "192.168.1.100" -HideDefaultValue
     if ([string]::IsNullOrWhiteSpace($ip)) { return }
-    $port = Read-Input -Prompt "Enter pairing port" -DefaultValue "45389"
+    $port = Read-Input -Prompt "Enter pairing port" -DefaultValue "45389" -HideDefaultValue
     if ([string]::IsNullOrWhiteSpace($port)) { return }
     $code = Read-Input -Prompt "Enter pairing code"
     if ([string]::IsNullOrWhiteSpace($code)) { return }
@@ -652,7 +653,7 @@ function Invoke-AdbConnect {
     param ([string]$adbPath)
     Write-InfoLog "Initiating ADB connect"
     Write-Host "`nConnect to a wireless device." -ForegroundColor Yellow
-    $ip = Read-Input -Prompt "Enter device IP address" -DefaultValue "192.168.1.100"
+    $ip = Read-Input -Prompt "Enter device IP address" -DefaultValue "192.168.1.100" -HideDefaultValue
     if ([string]::IsNullOrWhiteSpace($ip)) { 
         Write-DebugLog "User canceled IP input"
         return 
@@ -1085,11 +1086,11 @@ function Show-RecordingOptions {
         
         switch ($choiceIndex) {
             0 {
-                $newPath = Read-Input -Prompt "Enter new recording save path" -DefaultValue $currentPath
+                $newPath = Read-Input -Prompt "Enter new recording save path" -DefaultValue $currentPath -HideDefaultValue
                 
                 if (-not [string]::IsNullOrWhiteSpace($newPath)) {
                     if (-not (Test-Path $newPath -PathType Container)) {
-                        $confirm = Read-Input -Prompt "Path '$newPath' does not exist. Create it? (y/n)" -DefaultValue "y"
+                        $confirm = Read-Input -Prompt "Path '$newPath' does not exist. Create it? (y/n)" -DefaultValue "y" -HideDefaultValue
                         if ($confirm -eq 'y') {
                             try {
                                 New-Item -Path $newPath -ItemType Directory -ErrorAction Stop | Out-Null
@@ -1131,7 +1132,7 @@ function Show-RecordingOptions {
                     Write-Host "This process re-encodes the audio to AAC to ensure compatibility." -ForegroundColor Cyan
                     Write-Host "If FFmpeg is not available, remuxing will fail and the file will remain MKV." -ForegroundColor Cyan
                     Write-Host ""
-                    $confirm = Read-Input -Prompt "Do you want to continue with this option? (y/n)" -DefaultValue "y"
+                    $confirm = Read-Input -Prompt "Do you want to continue with this option? (y/n)" -DefaultValue "y" -HideDefaultValue
                     
                     if ($confirm -ne 'y') { continue }
                 }
@@ -1310,7 +1311,7 @@ function Show-PresetEditor {
             13 {
                 # Enter
                 $fieldToEdit = $fields[$currentField]
-                $newValue = Read-Input -Prompt "Enter new value for $($fieldToEdit.Prompt) (Enter to keep, 'e' to leave empty)`n" -DefaultValue $preset.($fieldToEdit.Name)
+                $newValue = Read-Input -Prompt "Enter new value for $($fieldToEdit.Prompt) (Enter to keep, 'e' to leave empty)`n" -DefaultValue $preset.($fieldToEdit.Name) -HideDefaultValue
                 
                 if ($null -eq $newValue) { continue }
                 elseif ($newValue -eq 'e') { $preset.($fieldToEdit.Name) = "" }
@@ -1574,7 +1575,7 @@ function Invoke-PresetManager {
                 if ($selectedIndex -gt 1 -and $selectedIndex -lt ($menuOptions.Count - 1)) {
                     $presetIndex = $selectedIndex - 2
                     $selectedPreset = $config.presets[$presetIndex]
-                    $confirm = Read-Input -Prompt "Are you sure you want to remove '$($selectedPreset.name)'? (y/n)" -DefaultValue "n"
+                    $confirm = Read-Input -Prompt "Are you sure you want to remove '$($selectedPreset.name)'? (y/n)" -DefaultValue "n" -HideDefaultValue
                     if ($confirm -eq 'y') {
                         Write-InfoLog "Removed preset: $($selectedPreset.name)"
                         $config.presets = $config.presets | Where-Object { $_.name -ne $selectedPreset.name }
@@ -1914,7 +1915,7 @@ function Start-Scrcpy {
             }
             $fileExt         = "mkv"
             $defaultFilename = "$($selectedPreset.name)_$(Get-Date -Format 'yyyyMMdd_HHmmss').$fileExt"
-            $filename        = Read-Input -Prompt "Enter recording filename" -DefaultValue $defaultFilename
+            $filename        = Read-Input -Prompt "Enter recording filename" -DefaultValue $defaultFilename -HideDefaultValue
             if ($null -eq $filename) { 
                 Write-InfoLog "User canceled filename input"
                 return 
@@ -2103,7 +2104,7 @@ function Main {
 
         if ($presetMatches.Count -gt 0) {
             $bestMatch = $presetMatches[0]
-            $confirm = Read-Input -Prompt "Did you mean '$($bestMatch.name)'? (y/n)" -DefaultValue "y"
+            $confirm = Read-Input -Prompt "Did you mean '$($bestMatch.name)'? (y/n)" -DefaultValue "y" -HideDefaultValue
             if ($confirm -eq 'y') {
                 $targetPreset = $bestMatch
             }
