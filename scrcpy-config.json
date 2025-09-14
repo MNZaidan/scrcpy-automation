@@ -49,7 +49,7 @@
     },
     {
       "name": "Example: Virtual Display",
-      "description": "--new-display=WIDTHxHEIGHT/DPI makes a new virtual display. Note: this option will kill the running app when scrcpy exits, --no-vd-destroy-content prevents this",
+      "description": "--new-display=WIDTHxHEIGHT/DPI makes a new virtual display. Note: this option will kill the running app when scrcpy exits, while --no-vd-destroy-content prevents this",
       "tags": "example, virtual-display, reference",
       "videoCodec": "h264",
       "videoBitrate": "8M",
