@@ -78,7 +78,12 @@ param (
     [Parameter(Mandatory = $false, HelpMessage = "Specify a custom path for the configuration file.")]
     [string]$ConfigPath,
     [Parameter(Mandatory = $false, HelpMessage = "Specify a custom path for the log file.")]
-    [string]$LogPath
+    [string]$LogPath,
+    [Parameter(Mandatory = $false, HelpMessage = "Maximum log file size in KB before rotation.")]
+    [int]$LogMaxSize = 2048,
+    [Parameter(Mandatory = $false, HelpMessage = "Percentage of lines to remove when rotating log (0-100).")]
+    [ValidateRange(0,100)]
+    [int]$LogTrimPercentage = 10
 )
 #endregion
 
@@ -190,6 +195,37 @@ function Write-ErrorLog {
     else {
         Write-DetailedLog -Message $Message -Level "ERROR"
     }
+}
+function Invoke-LogRotation {
+    param(
+        [string]$LogPath,
+        [int]$MaxSizeKB,
+        [int]$TrimPercentage
+    )
+
+    if (-not (Test-Path $LogPath)) { return }
+    try {
+        $logFile = Get-Item $LogPath -ErrorAction Stop
+        $maxSizeBytes = $MaxSizeKB * 1KB
+        
+        if ($logFile.Length -gt $maxSizeBytes) {
+            $lines = Get-Content $LogPath -ErrorAction Stop
+            $totalLines = $lines.Count
+            $linesToRemove = [math]::Ceiling($totalLines * ($TrimPercentage / 100))
+            
+            if ($linesToRemove -gt 0) {
+                $remainingLines = $lines | Select-Object -Skip $linesToRemove
+                $remainingLines | Set-Content $LogPath -Force -ErrorAction Stop
+                Write-DebugLog "Trimmed $linesToRemove lines from log file (exceeded ${MaxSizeKB}KB)"
+            }
+        }
+    }
+    catch {
+        Write-ErrorLog "Failed to rotate log file: $($_.Exception.Message)"
+    }
+}
+if ($Log) {
+    Invoke-LogRotation -LogPath $LogPath -MaxSizeKB $LogMaxSize -TrimPercentage $LogTrimPercentage
 }
 
 function Invoke-SafeCommand {
