@@ -11,22 +11,22 @@ A PowerShell script that provides a menu-driven text user interface for managing
 
 ## Features
 
-- **Device Management**: Connect to devices using the ADB auto connect feature, connect manually, kill ADB server, and run ADB TCP-IP to a USB connected device.
-- **Preset Manager**: Create, organize, and search scrcpy through configuration presets using a pre-made configurations or you can make them from scratch.
-- **Quick Launch Presets**: Set presets for one-click launching and favorites for visual tags.
+- **Device Management**: Connect to devices using the ADB auto connect feature, connect manually, kill ADB server, and enable ADB over TCP-IP for USB connected device.
+- **Preset Manager**: Create, organize, and search scrcpy through configuration presets using a pre-made configurations or you build your own using the preset manager.
+- **Quick Launch Presets**: Set presets for one-click launching and favorites for visual marks.
 - **Preset Configurations**: Customize tags for ease of search, resolution, codecs, bitrates, and other advanced scrcpy options.
 - **Convert Recording Format**: Record sessions in MKV format with optional automatic remuxing to MP4 (requires FFmpeg).
 
 ## Requirements
 
-- **PowerShell 7 or Newer**
+- **PowerShell 7 or later**
 - **scrcpy**
-- **ADB (Android Debug Bridge)**: Typically included with scrcpy
+- **ADB (Android Debug Bridge)**: Typically included with scrcpy.
 - **FFmpeg**: Optional, for MP4 remuxing.
-- **Android Device**: [USB Debugging must be enabled to use scrcpy](https://github.com/Genymobile/scrcpy?tab=readme-ov-file#prerequisites)
+- **Android Device**: [USB Debugging must be enabled to use scrcpy](https://github.com/Genymobile/scrcpy?tab=readme-ov-file#prerequisites).
 
 > [!Important]
-> Older versions of Windows PowerShell (pre-installed with Windows) may not be able to run at all and could display errors. You can download PowerShell 7 or newer from [the official PowerShell GitHub page](https://github.com/PowerShell/PowerShell/releases).
+> Older versions of Windows PowerShell (pre-installed with Windows) may not work and could display errors. You can download PowerShell 7 or later from [the official PowerShell GitHub repository](https://github.com/PowerShell/PowerShell/releases).
 
 ## Installation
 
@@ -34,8 +34,9 @@ A PowerShell script that provides a menu-driven text user interface for managing
 
 Install the required dependencies using one of the following methods:
 
-#### Using Scoop (Windows)
+#### Using Package Managers (Windows)
 
+Scoop
 ```powershell
 # Install Scoop package manager
 Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
@@ -46,8 +47,7 @@ scoop bucket add main
 scoop install scrcpy adb ffmpeg
 ```
 
-#### Using Chocolatey (Windows)
-
+or Chocolatey
 ```powershell
 # Install Chocolatey package manager
 Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
@@ -61,13 +61,13 @@ choco install scrcpy adb ffmpeg
 1. Download and install scrcpy.
 2. Download and install Android Platform Tools (This shouldn't be necessary if you have installed scrcpy properly).
 3. Download and install FFmpeg (optional for MP4 remuxing).
-4. Add the installation directories for scrcpy, ADB, and FFmpeg to your [system's PATH environment variable.](https://windowsloop.com/how-to-add-to-windows-path/)
+4. Add the installation directories for scrcpy, ADB, and FFmpeg to your [system's PATH environment variable.](https://windowsloop.com/how-to-add-to-windows-path/).
 
 ### 2. Script Installation
 
-1. Download the `scrcpy-automation.ps1` script and/or the pre-made `scrcpy-config.json` through the [releases page](https://github.com/MNZaidan/scrcpy-automation/releases/latest).
-2. Make a new directory for the script and place the downloaded files there.
-3. Navigate to the script directory and run using Powershell 7 with your favorite terminal:
+1. Download the `scrcpy-automation.ps1` script and/or the pre-made `scrcpy-config.json` from the [releases page](https://github.com/MNZaidan/scrcpy-automation/releases/latest).
+2. Create a new directory for the script and place the downloaded files there.
+3. Navigate to the script directory and run it using Powershell 7 in your favorite terminal:
 
    ```powershell
    .\scrcpy-automation.ps1
@@ -93,26 +93,27 @@ Launch scrcpy directly with a specific preset without the interactive menu (supp
 
 ### ADB Options
 
-These options can be found under the select device menu.
+These options are available under the "Select Device" menu.
 
 > [!Note]
-> You can use scrcpy via USB connection or wirelessly via ADB pairing or ADB TCP-IP.
+> You can use scrcpy via USB connection or wirelessly via ADB pairing or ADB TCP/IP.
 > Wireless ADB connections require that your device and computer are on the same network.
 
-- **Auto Connect**: Automatically connects wirelessly to available TCP-IP devices using Get-NetNeighbor or ARP table scan. If these fails, you can try connecting manually or using pairing.
-- **Connect (Manual)**: Connect to a device wirelessly manually using a TCP-IP enabled device's IP address and port.
-- **Pair**: Connect to a device wirelessly using a [wireless debugging pairing code](https://developer.android.com/tools/adb#connect-to-a-device-over-wi-fi).
-- **TCP-IP**: enable ADB over TCP-IP connection to a USB connected device.
-- **Kill ADB Server**: Stops the ADB server if it's running to fix connection issues. Running any ADB command will restart the server.
+- **Auto Connect**: Automatically connect wirelessly to available TCP/IP devices using Get-NetNeighbor or ARP table scan. If these fail, try connecting manually or using pairing.
+- **Connect (Manual)**: Connect wirelessly to a device by using its IP address and port.
+- **Pair**: Connect wirelessly using a [wireless debugging pairing code](https://developer.android.com/tools/adb#connect-to-a-device-over-wi-fi).
+- **TCP-IP**: Enable ADB over TCP/IP for a USB connected device.
+- **Kill ADB Server**: Stops the ADB server to resolve connection issues. Any ADB command will restart the server.
 
 ### Preset Management
 
 >[!Note]
 >You can use the pre-made `scrcpy-config.json` file included in the [releases page](https://github.com/MNZaidan/scrcpy-automation/releases/latest) or create your own from scratch.
+
 - Create new presets with custom parameters.
-- Add tags, reorder, duplicate or edit existing presets.
-- Organize presets into categories by using - as a prefix and - as a suffix in preset names. (e.g., `-Gaming-`, `-Video-`, etc.)
-- Mark presets as favorites or set them as quick-launch options. These will appear at the main menu for quick access. Last used preset is also available for quick access.
+- Add tags, reorder, duplicate, or edit existing presets.
+- Organize presets into categories by using `-` as a prefix and suffix in preset names (e.g., `-Gaming-`, `-Video-`, etc.).
+- Mark presets as quick-launch options. These will appear on the main menu for quick access. The last used preset is also available for quick access. Marking favorite will add a star to the preset for ease of identification.
 - Search for presets using keywords and tags.
 
 ### Recording Options
@@ -131,13 +132,13 @@ The script uses a `scrcpy-config.json` file to store:
 - Quick-launch preset
 - Last used preset
 
-This file is automatically created in the script's directory on first run if it doesn't exist.
+This file is automatically created in the script's directory on the first run if it doesn't exist.
 
 ## Troubleshooting
-Please refer to [the official scrcpy Github documentation](https://github.com/Genymobile/scrcpy) for more information on scrcpy issues.
+Refer to the [official scrcpy documentation](https://github.com/Genymobile/scrcpy) for more details on scrcpy issues.
 
-- **PowerShell Version**: Ensure you're using PowerShell 7 or newer to avoid compatibility issues.
-- **scrcpy/ADB Not Found**: Verify that scrcpy and ADB are installed and added to your [system's PATH](https://windowsloop.com/how-to-add-to-windows-path/).
+- **PowerShell Version**: Ensure you're using PowerShell 7 or later to avoid compatibility issues.
+- **scrcpy/ADB Not Found**: Confirm that scrcpy and ADB are installed and added to your [system's PATH](https://windowsloop.com/how-to-add-to-windows-path/).
 - **Device Not Detected**: Ensure USB debugging is enabled on your Android device and grant necessary permissions.
-- **Wireless Connection Issues**: Confirm that both devices are on the same network and [ADB connections are properly set up](https://github.com/MNZaidan/scrcpy-automation?tab=readme-ov-file#ADB-options).
+- **Wireless Connection Issues**: Verify that both devices are on the same network and [ADB connections are properly configured](https://github.com/MNZaidan/scrcpy-automation?tab=readme-ov-file#ADB-options).
 - **Recording Errors**: Ensure FFmpeg is installed and [added to PATH](https://windowsloop.com/how-to-add-to-windows-path/) if using MP4 remuxing.
