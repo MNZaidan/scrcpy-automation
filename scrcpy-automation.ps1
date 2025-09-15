@@ -1563,9 +1563,9 @@ function Invoke-PresetManager {
                     return $config
                 }
                 else { # Edit Preset
-                    Write-DebugLog "User is editing $($selectedPreset.name)"
                     $presetIndex = $selectedIndex - 2
                     $selectedPreset = $config.presets[$presetIndex]
+                    Write-DebugLog "User is editing $($selectedPreset.name)"
                     $editedPreset = Show-PresetEditor -Preset $selectedPreset.psobject.Copy() -ExistingPresets $config.presets
                     if ($editedPreset) {
                         Write-InfoLog "Edited preset: $($editedPreset.name)"
@@ -1575,10 +1575,10 @@ function Invoke-PresetManager {
                 }
             }
             46 { # Delete
-                Write-DebugLog "User is deleting $($selectedPreset.name)"
                 if ($selectedIndex -gt 1 -and $selectedIndex -lt ($menuOptions.Count - 1)) {
                     $presetIndex = $selectedIndex - 2
                     $selectedPreset = $config.presets[$presetIndex]
+                    Write-DebugLog "User is deleting $($selectedPreset.name)"
                     $confirm = Read-Input -Prompt "Are you sure you want to remove '$($selectedPreset.name)'? (y/n)" -DefaultValue "n" -HideDefaultValue
                     if ($confirm -eq 'y') {
                         Write-InfoLog "Removed preset: $($selectedPreset.name)"
@@ -1618,10 +1618,11 @@ function Invoke-PresetManager {
                 }
             }
             68 { # 'D' key - Duplicate
-                Write-DebugLog "User is duplicating $($selectedPreset.name)"
                 if ($selectedIndex -gt 1 -and $selectedIndex -lt ($menuOptions.Count - 1)) {
                     $presetIndex    = $selectedIndex - 2
-                    $newPreset      = $config.presets[$presetIndex].psobject.Copy()
+                    $selectedPreset = $config.presets[$presetIndex]
+                    Write-DebugLog "User is duplicating $($selectedPreset.name)"
+                    $newPreset      = $selectedPreset.psobject.Copy()
                     $newPreset.name = "$($newPreset.name) (copy)"
                     
                     $editedPreset = Show-PresetEditor -Preset $newPreset -ExistingPresets $config.presets
@@ -1635,10 +1636,10 @@ function Invoke-PresetManager {
                 }
             }
             70 { # 'F' key - Favorite
-                Write-DebugLog "User is toggling favorite for $($selectedPreset.name)"
                 if ($selectedIndex -gt 1 -and $selectedIndex -lt ($menuOptions.Count - 1)) {
                     $presetIndex = $selectedIndex - 2
                     $current     = $config.presets[$presetIndex]
+                    Write-DebugLog "User is toggling favorite for $($current.name)"
 
                     if ($current.PSObject.Properties.Name -contains 'favorite' -and $current.favorite -eq $true) {
                         Write-InfoLog "Unfavorited preset: $($current.name)"
@@ -1657,10 +1658,10 @@ function Invoke-PresetManager {
                 }
             }
             81 { # 'Q' key - Quick Launch
-                Write-DebugLog "User is setting $($selectedPreset.name) as the Quick Launch preset."
                 if ($selectedIndex -gt 1 -and $selectedIndex -lt ($menuOptions.Count - 1)) {
                     $presetIndex    = $selectedIndex - 2
                     $selectedPreset = $config.presets[$presetIndex]
+                    Write-DebugLog "User is setting $($selectedPreset.name) as the Quick Launch preset."
                     if (Find-IsCategory -Preset $selectedPreset) {
                         Write-Host "Categories cannot be set as the Quick Launch preset." -ForegroundColor Red
                         Start-Sleep -Seconds 2
