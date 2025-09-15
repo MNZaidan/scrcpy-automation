@@ -354,6 +354,7 @@ function Show-Menu {
         }
 
         $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        Write-DebugLog "Key pressed: $($key.VirtualKeyCode)"
         $returnKeys = @(27, 88, 13) + $AdditionalReturnKeyCodes  # Escape, X, Enter + other
         switch ($key.VirtualKeyCode) {
             27 { return @{ Key = 'Escape'; Index = -1; KeyInfo = $key } } # Escape
@@ -447,7 +448,7 @@ function Read-Input {
 
     while ($true) {
         $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-        
+        Write-DebugLog "Key pressed: $($key.VirtualKeyCode)"
         switch ($key.VirtualKeyCode) {
             13 {
                 # Enter key
@@ -506,6 +507,7 @@ function Wait-Enter {
     Write-Host "Press Enter to continue..." -NoNewline
     while ($true) {
         $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        Write-DebugLog "Key pressed: $($key.VirtualKeyCode)"
         if ($key.VirtualKeyCode -eq 13) {  # Enter key
             Write-Host ""
             break
@@ -1305,6 +1307,7 @@ function Show-PresetEditor {
         Write-Host "[ S ]  Save      |  [ESC/X]  Cancel" -ForegroundColor Blue
 
         $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        Write-DebugLog "Key pressed: $($key.VirtualKeyCode)"
         switch ($key.VirtualKeyCode) {
             27 { return $null } # Escape
             88 { return $null } # 'x' key
@@ -1463,6 +1466,7 @@ function Invoke-PresetSearch {
         Write-Host "[ESC] Back" -ForegroundColor Blue
 
         $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        Write-DebugLog "Key pressed: $($key.VirtualKeyCode)"
         switch ($key.VirtualKeyCode) {
             27 { return $null } # Escape
             13 { # Enter
@@ -2035,6 +2039,7 @@ function Start-Scrcpy {
         Write-Host "[ESC/X] Exit Script" -ForegroundColor Yellow
         
         $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        Write-DebugLog "Key pressed: $($key.VirtualKeyCode)"
         switch ($key.VirtualKeyCode) {
             13 { 
                 Write-DebugLog "User chose to return to main menu"
