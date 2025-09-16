@@ -1967,7 +1967,6 @@ function Start-Scrcpy {
                     while ($process.StandardOutput.Peek() -gt -1) {
                         $outputLine = $process.StandardOutput.ReadLine()
                         if ($null -ne $outputLine) {
-                            Write-Host $outputLine
                             [void]$combinedOutput.Add($outputLine)
                         }
                     }
@@ -1975,7 +1974,6 @@ function Start-Scrcpy {
                     while ($process.StandardError.Peek() -gt -1) {
                         $errorLine = $process.StandardError.ReadLine()
                         if ($null -ne $errorLine) {
-                            Write-Host $errorLine -ForegroundColor Red
                             [void]$combinedOutput.Add($errorLine)
                         }
                     }
@@ -1983,13 +1981,11 @@ function Start-Scrcpy {
                 
                 $remainingOutput = $process.StandardOutput.ReadToEnd()
                 if (-not [string]::IsNullOrEmpty($remainingOutput)) {
-                    Write-Host $remainingOutput
                     [void]$combinedOutput.Add($remainingOutput)
                 }
                 
                 $remainingError = $process.StandardError.ReadToEnd()
                 if (-not [string]::IsNullOrEmpty($remainingError)) {
-                    Write-Host $remainingError -ForegroundColor Red
                     [void]$combinedOutput.Add($remainingError)
                 }
                 
