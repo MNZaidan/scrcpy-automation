@@ -1,7 +1,7 @@
 #region Script Metadata
 <#
 .SYNOPSIS
-    A PowerShell script to automate scrcpy sessions with an interactive 
+    A PowerShell script to automate scrcpy session with an interactive 
     preset manager, device selection, and recording capabilities.
 
 .DESCRIPTION
@@ -56,9 +56,9 @@
     Launches the script with real-time scrcpy output capture enabled (more resource intensive).
 
 .LINK
-    scrcpy-automation: https://github.com/MNZaidan/scrcpy-automation
-    scrcpy documentation: https://github.com/Genymobile/scrcpy
-    FFmpeg download: https://ffmpeg.org/download.html
+    [scrcpy Automation](https://github.com/MNZaidan/scrcpy-automation)
+    [scrcpy Documentation](https://github.com/Genymobile/scrcpy)
+    [FFmpeg Download](https://ffmpeg.org/download.html)
 #>
 #endregion
 
@@ -438,8 +438,8 @@ function Read-Input {
         Write-Host $CurrentInput -NoNewline
         
         $totalChars = $promptPosition.X + $CurrentCursorIndex
-        $newX = $totalChars % $Host.UI.RawUI.BufferSize.Width
-        $newY = $promptPosition.Y + [math]::Floor($totalChars / $Host.UI.RawUI.BufferSize.Width)
+        $newX       = $totalChars % $Host.UI.RawUI.BufferSize.Width
+        $newY       = $promptPosition.Y + [math]::Floor($totalChars / $Host.UI.RawUI.BufferSize.Width)
         
         $Host.UI.RawUI.CursorPosition = [System.Management.Automation.Host.Coordinates]::new($newX, $newY)
     }
@@ -919,7 +919,7 @@ function Get-Config {
                 $loadedConfig.presets | ForEach-Object {
                     $newPreset = [ordered]@{}
                     foreach ($prop in $PresetProperties) {
-                        $defaultValue = if ($prop -eq 'favorite') { $false } else { "" }
+                        $defaultValue    = if ($prop -eq 'favorite') { $false } else { "" }
                         $newPreset.$prop = if ($_.ContainsKey($prop)) { $_.$prop } else { $defaultValue }
                     }
                     [pscustomobject]$newPreset
@@ -983,7 +983,7 @@ function Save-Config {
     if (Test-Path $ConfigPath) {
         try {
             $jsonContent = Get-Content -Path $ConfigPath -Raw -ErrorAction Stop
-            $oldConfig = $jsonContent | ConvertFrom-Json -AsHashtable -ErrorAction Stop
+            $oldConfig   = $jsonContent | ConvertFrom-Json -AsHashtable -ErrorAction Stop
         }
         catch {
             Write-DebugLog "Could not read old config for comparison: $($_.Exception.Message)"
@@ -1435,7 +1435,7 @@ function Invoke-PresetSearch {
 
         if ($results.Count -gt 0) {
             $maxNameLength = (@($results.name) | Measure-Object -Maximum -Property Length).Maximum
-            if ($null -eq $maxNameLength) { $maxNameLength = 0 } # Fallback for safety
+            if ($null -eq $maxNameLength) { $maxNameLength = 0 }
 
             $displayOptions = @()
             foreach ($preset in $results) {
