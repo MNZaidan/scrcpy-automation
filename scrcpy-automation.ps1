@@ -164,8 +164,11 @@ function Write-DetailedLog {
 }
 
 function Write-LogOnly {
-    param ([string]$Message)
-    Write-DetailedLog -Message $Message -Level "DEBUG" -NoConsoleOutput
+    param (
+        [string]$Message,
+        [string]$Level = "DEBUG"
+    )
+    Write-DetailedLog -Message $Message -Level $Level -NoConsoleOutput
 }
 
 function Write-DebugLog {
