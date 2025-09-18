@@ -122,7 +122,8 @@ function Write-DetailedLog {
         [string]$Message,
         [System.Management.Automation.ErrorRecord]$Exception = $null,
         [string]$Level = "INFO",
-        [string]$ForegroundColor = $null
+        [string]$ForegroundColor = $null,
+        [switch]$NoConsoleOutput
     )
     
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
@@ -139,23 +140,32 @@ function Write-DetailedLog {
             $logEntry | Add-Content -Path $LogPath -Force
         }
         catch {
-            Write-Host "LOG ERROR: Failed to write to log file: $($_.Exception.Message)" -ForegroundColor Red
+            if (-not $NoConsoleOutput) {
+                Write-Host "LOG ERROR: Failed to write to log file: $($_.Exception.Message)" -ForegroundColor Red
+            }
         }
     }
     
-    switch ($Level) {
-        "ERROR" { Write-Host $consoleOutput -ForegroundColor Red }
-        "WARN"  { Write-Host $consoleOutput -ForegroundColor Yellow }
-        "DEBUG" { Write-Host $consoleOutput -ForegroundColor Magenta }
-        default {             
-            if ($ForegroundColor) {
-                Write-Host $consoleOutput -ForegroundColor $ForegroundColor
-            }
-            else {
-                Write-Host $consoleOutput
+    if (-not $NoConsoleOutput) {
+        switch ($Level) {
+            "ERROR" { Write-Host $consoleOutput -ForegroundColor Red }
+            "WARN"  { Write-Host $consoleOutput -ForegroundColor Yellow }
+            "DEBUG" { Write-Host $consoleOutput -ForegroundColor Magenta }
+            default {             
+                if ($ForegroundColor) {
+                    Write-Host $consoleOutput -ForegroundColor $ForegroundColor
+                }
+                else {
+                    Write-Host $consoleOutput
+                }
             }
         }
     }
+}
+
+function Write-LogOnly {
+    param ([string]$Message)
+    Write-DetailedLog -Message $Message -Level "DEBUG" -NoConsoleOutput
 }
 
 function Write-DebugLog {
