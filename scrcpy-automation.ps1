@@ -26,6 +26,10 @@
     Optional. The ADB serial of the device to connect to. If not provided, 
     the script will prompt for device selection.
 
+.PARAMETER Record
+    Enable recording of the scrcpy session. The recording path and format 
+    can be configured in the JSON config file or through the interactive menu.
+
 .PARAMETER Log
     Enable logging to file.
 
@@ -47,9 +51,10 @@
     Launches the script and displays the main menu with all options.
 
 .EXAMPLE
-    .\scrcpy-automation.ps1 -Preset "Low Latency"
+    .\scrcpy-automation.ps1 -Preset "Low Latency" -Record
     Searches for a preset matching "Low Latency" (will find "Low Latency / Gaming")
-    and asks for confirmation before launching.
+    and asks for confirmation before launching. After confirmation scrcpy will start
+    with recording enabled.
 
 .EXAMPLE
     .\scrcpy-automation.ps1 -RealTimeCapture
@@ -72,6 +77,10 @@ param (
     [Parameter(ParameterSetName = 'Launch', Mandatory = $false)]
     [Alias('Serial')]
     [string]$DeviceSerial,
+    
+    [Parameter(ParameterSetName = 'Launch', Mandatory = $false)]
+    [Alias('Rec')]
+    [switch]$Record,
 
     [Parameter(Mandatory = $false)]
     [Alias('?', 'h')]
@@ -2119,7 +2128,7 @@ function Main {
         return
     }
 
-    if (-not [string]::IsNullOrEmpty($Preset)) {
+        if (-not [string]::IsNullOrEmpty($Preset)) {
         Write-InfoLog "Searching for preset: '$Preset'"
     
         $presetMatches = Find-Presets -SearchTerm $Preset -AllPresets $config.presets
@@ -2139,7 +2148,11 @@ function Main {
 
         if ($targetPreset) {
             Write-InfoLog "Using preset: '$($targetPreset.name)'"
-            Start-Scrcpy -executables $executables -config $config -InitialPresetName $targetPreset.name -DeviceSerial $DeviceSerial
+            if ($Record) {
+                Start-Scrcpy -executables $executables -config $config -IsRecording -InitialPresetName $targetPreset.name -DeviceSerial $DeviceSerial
+            } else {
+                Start-Scrcpy -executables $executables -config $config -InitialPresetName $targetPreset.name -DeviceSerial $DeviceSerial
+            }
             Write-InfoLog "Exiting script after direct launch."
         }
         else {
