@@ -2155,9 +2155,6 @@ function Main {
             if ($null -ne $selectedDevice) {
                 $config.selectedDevice = $selectedDevice
                 Save-Config $config
-            } else {
-                $config.selectedDevice = ""
-                Save-Config $config
             }
         }
         elseif ($chosenOption.StartsWith("Quick Launch")) { Start-Scrcpy -executables $executables -config $config -InitialPresetName $config.quickLaunchPreset }
