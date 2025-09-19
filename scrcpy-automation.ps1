@@ -606,7 +606,7 @@ function Get-DeviceDisplayName {
         
         if ($null -eq $device) {
             $retryCount++
-            Write-DebugLog "Selected device not found in 'device' state (attempt $retryCount/$MaxRetries)"
+            Write-DebugLog "Retrying lookup for device '$deviceSerial' to reach 'device' state (attempt $retryCount/$MaxRetries)"
             Start-Sleep -Milliseconds 500
         }
     }
