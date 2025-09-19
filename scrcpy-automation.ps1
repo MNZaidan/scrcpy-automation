@@ -10,7 +10,7 @@
     device management, and configurable recording settings.
 
 .NOTES
-    Version: 2.25
+    Version: 2.26
     Requirements:
         - PowerShell 7 or later
         - scrcpy installed and available in PATH
@@ -120,7 +120,7 @@ param (
 #region Global Variables and Defaults
 $global:LastAdbOperation = $null
 $OutputEncoding = [System.Text.Encoding]::UTF8
-$ScriptVersion = "2.25"
+$ScriptVersion = "2.26"
 $MaxMenuItems = 19 # The maximum number of items to display in menus before scrolling
 $DisableClearHost = $NoClear
 $PresetProperties = @(
