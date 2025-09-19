@@ -1,4 +1,4 @@
-#region Script Metadata
+
 <#
 .SYNOPSIS
     A PowerShell script to automate scrcpy session with an interactive 
@@ -60,7 +60,6 @@
     [scrcpy Documentation](https://github.com/Genymobile/scrcpy)
     [FFmpeg Download](https://ffmpeg.org/download.html)
 #>
-#endregion
 
 #region Parameters
 [CmdletBinding()]
