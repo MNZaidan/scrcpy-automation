@@ -1,4 +1,3 @@
-
 <#
 .SYNOPSIS
     A PowerShell script to automate scrcpy session with an interactive 
@@ -19,12 +18,13 @@
         - FFmpeg in PATH (optional, for MP4 remuxing)
         - Android device with USB debugging enabled
 
-.PARAMETER DeviceSerial
-    Optional. The ADB serial of the device to connect to. If not provided, 
-    the script will prompt for device selection.
 .PARAMETER Preset
     Optional. Launch scrcpy directly with the specified preset name.
     Supports fuzzy matching - will prompt for confirmation if an exact match isn't found.
+
+.PARAMETER DeviceSerial
+    Optional. The ADB serial of the device to connect to. If not provided, 
+    the script will prompt for device selection.
 
 .PARAMETER Log
     Enable logging to file.
@@ -32,7 +32,7 @@
 .PARAMETER NoClear
     Disable screen clearing between menus.
 
-.PARAMETER RealTimeOutput
+.PARAMETER RealTimeCapture
     Enable real-time output reading (resource intensive). By default, scrcpy output is displayed
     but not captured for logging until the process exits.
 
@@ -56,31 +56,53 @@
     Launches the script with real-time scrcpy output capture enabled (more resource intensive).
 
 .LINK
-    [scrcpy Automation](https://github.com/MNZaidan/scrcpy-automation)
-    [scrcpy Documentation](https://github.com/Genymobile/scrcpy)
-    [FFmpeg Download](https://ffmpeg.org/download.html)
+    scrcpy Automation    : https://github.com/MNZaidan/scrcpy-automation
+    scrcpy Documentation : https://github.com/Genymobile/scrcpy
+    FFmpeg Download      : https://ffmpeg.org/download.html
 #>
 
 #region Parameters
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'Interactive')]
 param (
-    [Parameter(Mandatory = $false, HelpMessage = "The ADB serial of the device to connect to.")]
-    [string]$DeviceSerial,
-    [Parameter(Mandatory = $false, HelpMessage = "Launch scrcpy directly with the specified preset name.")]
+    [Parameter(Position = 0, ParameterSetName = 'Launch', Mandatory = $false)]
+    [ValidateNotNullOrEmpty()]
+    [Alias('PresetName')]
     [string]$Preset,
-    [Parameter(Mandatory = $false, HelpMessage = "Enable logging to file.")]
-    [switch]$Log,
-    [Parameter(Mandatory = $false, HelpMessage = "Disable screen clearing between menus.")]
-    [switch]$NoClear,
-    [Parameter(Mandatory = $false, HelpMessage = "Enable real-time scrcpy output reading (resource intensive).")]
+    
+    [Parameter(ParameterSetName = 'Launch', Mandatory = $false)]
+    [Alias('Serial')]
+    [string]$DeviceSerial,
+
+    [Parameter(Mandatory = $false)]
+    [Alias('?', 'h')]
+    [switch]$Help,
+
+    [Parameter(Mandatory = $false)]
+    [Alias('Realtime','RtCap')]
     [switch]$RealTimeCapture,
-    [Parameter(Mandatory = $false, HelpMessage = "Specify a custom path for the configuration file.")]
+
+    [Parameter(Mandatory = $false)]
+    [Alias('LogFileEnabled')]
+    [switch]$Log,
+
+    [Parameter(Mandatory = $false)]
+    [Alias('NoClearHost')]
+    [switch]$NoClear,
+
+    [Parameter(Mandatory = $false)]
+    [ValidateNotNullOrEmpty()]
+    [Alias('Cfg','ConfigFile')]
     [string]$ConfigPath,
-    [Parameter(Mandatory = $false, HelpMessage = "Specify a custom path for the log file.")]
+
+    [Parameter(Mandatory = $false)]
+    [Alias('LogFile','LogPathFull')]
     [string]$LogPath,
-    [Parameter(Mandatory = $false, HelpMessage = "Maximum log file size in KB before rotation.")]
+
+    [Parameter(Mandatory = $false)]
+    [ValidateRange(1, 10240)]
     [int]$LogMaxSize = 50,
-    [Parameter(Mandatory = $false, HelpMessage = "Percentage of lines to remove when rotating log (0-100).")]
+
+    [Parameter(Mandatory = $false)]
     [ValidateRange(0,100)]
     [int]$LogTrimPercentage = 15
 )
@@ -2090,9 +2112,9 @@ function Main {
     $config = Get-Config
     if ($null -eq $config) { Read-Host "Press Enter to exit..."; return }
 
-    if (-not [string]::IsNullOrEmpty($Preset) -and $Preset.StartsWith('-')) {
-        Write-InfoLog "The argument '$Preset' appears to be a command-line switch" -ForegroundColor Yellow
-        Write-Host "For script help, use the standard PowerShell command: Get-Help `"$PSCommandPath`""
+    if ($Help) {
+        Write-Host "For script help, use the standard PowerShell command:"
+        Write-Host "  Get-Help `"$PSCommandPath`"" -ForegroundColor Yellow
         Read-Host "Press Enter to exit..."
         return
     }
