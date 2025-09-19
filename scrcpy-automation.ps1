@@ -531,48 +531,60 @@ function Wait-Enter {
 
 #region ADB Device Management Functions
 function Get-AdbDeviceList {
-    param ([string]$adbPath)
+    param (
+        [string]$adbPath,
+        [int]$MaxRetries = 5
+    )
     
     $deviceList = @()
-    try {
-        $adbOutput = Invoke-SafeCommand -Command { & $adbPath devices -l } -ErrorMessage "Failed to run adb devices command"
-        if ($null -ne $adbOutput) {
-            $adbOutput | ForEach-Object {
-                if ($_ -is [string] -and $_.Trim() -ne "") {
-                    Write-DebugLog "  $($_.Trim())"
+    $retryCount = 0
+    
+    while ($retryCount -le $MaxRetries) {
+        try {
+            $adbOutput = Invoke-SafeCommand -Command { & $adbPath devices -l } -ErrorMessage "Failed to run adb devices command"
+            
+            $adbOutput | Where-Object { $_ -is [string] } | Select-Object -Skip 1 | ForEach-Object {
+                $line = $_.Trim()
+                if ($line -and $line -match '^(\S+)\s+(\S+)\b') {
+                    $serial = $matches[1]
+                    $state = $matches[2]
+                    
+                    if ($state -in @('device', 'offline', 'unauthorized')) {
+                        $modelMatch = $line | Select-String -Pattern 'model:([^\s]+)'
+                        
+                        if ($modelMatch) {
+                            $model = $modelMatch.Matches.Groups[1].Value
+                            $deviceList += [pscustomobject]@{ Serial = $serial; Model = $model; State = $state }
+                        }
+                        else {
+                            $deviceList += [pscustomobject]@{ Serial = $serial; Model = ""; State = $state }
+                        }
+                    }
                 }
             }
+            if ($deviceList.Count -gt 0 -or $retryCount -eq $MaxRetries) {
+                break
+            }
         }
-        if ($null -eq $adbOutput) { return $null }
-    }
-    catch {
-        Write-ErrorLog "ADB command failed completely" $_.Exception
-        return $null
+        catch {
+            Write-ErrorLog "ADB command failed: $($_.Exception.Message)"
+        }
+        
+        $retryCount++
+        if ($retryCount -le $MaxRetries) {
+            Write-DebugLog "No devices found, retrying... ($retryCount/$MaxRetries)"
+            Start-Sleep -Milliseconds 500
+        }
     }
     
-    $adbOutput | Where-Object { $_ -is [string] } | Select-Object -Skip 1 | ForEach-Object {
-        $line = $_.Trim()
-        if ($line -and $line -match '^(\S+)\s+(\S+)\b') {
-            $serial = $matches[1]
-            $state = $matches[2]
-            
-            if ($state -in @('device', 'offline', 'unauthorized')) {
-                $modelMatch = $line | Select-String -Pattern 'model:([^\s]+)'
-                
-                if ($modelMatch) {
-                    $model = $modelMatch.Matches.Groups[1].Value
-                    $deviceList += [pscustomobject]@{ Serial = $serial; Model = $model; State = $state }
-                }
-                else {
-                    $deviceList += [pscustomobject]@{ Serial = $serial; Model = ""; State = $state }
-                }
-            }
-        }
-    }
     return $deviceList
 }
 function Get-DeviceDisplayName {
-    param ([string]$adbPath, [string]$deviceSerial)
+    param (
+        [string]$adbPath,
+        [string]$deviceSerial,
+        [int]$MaxRetries = 1
+    )
     
     $deviceSerial = $deviceSerial.Trim()
     
@@ -585,17 +597,16 @@ function Get-DeviceDisplayName {
     
     $device = $null
     $retryCount = 0
-    $maxRetries = 3
     
-    while ($retryCount -lt $maxRetries -and $null -eq $device) {
-        $deviceList = Get-AdbDeviceList -adbPath $adbPath
+    while ($retryCount -lt $MaxRetries -and $null -eq $device) {
+        $deviceList = Get-AdbDeviceList -adbPath $adbPath -MaxRetries 0
         $device = $deviceList | Where-Object { 
             $_.Serial.Trim() -eq $deviceSerial -and $_.State -eq 'device'
         } | Select-Object -First 1
         
         if ($null -eq $device) {
             $retryCount++
-            Write-DebugLog "Selected device not found in 'device' state (attempt $retryCount/$maxRetries)"
+            Write-DebugLog "Selected device not found in 'device' state (attempt $retryCount/$MaxRetries)"
             Start-Sleep -Milliseconds 500
         }
     }
@@ -610,7 +621,7 @@ function Get-DeviceDisplayName {
         }
     }
     else { 
-        $anyStateDevice = (Get-AdbDeviceList -adbPath $adbPath) | Where-Object { $_.Serial.Trim() -eq $deviceSerial } | Select-Object -First 1
+        $anyStateDevice = (Get-AdbDeviceList -adbPath $adbPath -MaxRetries 0) | Where-Object { $_.Serial.Trim() -eq $deviceSerial } | Select-Object -First 1
         if ($anyStateDevice) {
             Write-DebugLog "Selected device found but in state: $($anyStateDevice.State)"
             return "$deviceSerial [$($anyStateDevice.State)]"
@@ -796,12 +807,15 @@ function Show-AdbOptionsMenu {
 }
 
 function Show-DeviceSelection {
-    param ([string]$adbPath, [string]$currentDevice = "")
+    param (
+        [string]$adbPath,
+        [string]$currentDevice = ""
+    )
     
     Write-DebugLog "Showing device selection menu"
     
     while ($true) {
-        $deviceList = Get-AdbDeviceList -adbPath $adbPath
+        $deviceList = Get-AdbDeviceList -adbPath $adbPath -MaxRetries 3
         
         $options = @("Refresh Device List", "ADB Options")
         
@@ -859,7 +873,7 @@ function Show-DeviceSelection {
                 
                 while ($attempts -lt $maxAttempts -and -not $deviceReady) {
                     Start-Sleep -Seconds 1
-                    $refreshedList = Get-AdbDeviceList -adbPath $adbPath
+                    $refreshedList = Get-AdbDeviceList -adbPath $adbPath -MaxRetries 0
                     $refreshedDevice = $refreshedList | Where-Object { $_.Serial -eq $selectedDevice }
                     
                     if ($refreshedDevice -and $refreshedDevice.State -eq 'device') {
@@ -1792,50 +1806,30 @@ function Start-Scrcpy {
             Write-InfoLog "Selected device: $selectedDevice"
         }
 
-        # 2. Validate selected device (only if we have one)
+        # 2. Validate selected device
         if (-not [string]::IsNullOrWhiteSpace($config.selectedDevice)) {
             $config.selectedDevice = $config.selectedDevice.Trim()
-            Write-DebugLog "Validating device connection: $($config.selectedDevice)"
-            $deviceList = Get-AdbDeviceList -adbPath $executables.AdbPath
-            $device = $deviceList | Where-Object { $_.Serial -eq $config.selectedDevice } | Select-Object -First 1
+            Write-DebugLog "Checking device connection: $($config.selectedDevice)"
             
+            $deviceList = Get-AdbDeviceList -adbPath $executables.AdbPath -MaxRetries 3
+            $device = $deviceList | Where-Object { $_.Serial -eq $config.selectedDevice } | Select-Object -First 1
+
             if (-not $device -or $device.State -ne 'device') {
-                Write-ErrorLog "Device validation failed. Device found: $($null -ne $device), State: $($device.State)"
-                Write-DebugLog "Device not ready, attempting to refresh..."
-                $maxRetries = 5
-                $retryCount = 0
-                $deviceReady = $false
+                Write-ErrorLog "Selected device '$($config.selectedDevice)' is not connected or not in device state."
 
-                while ($retryCount -lt $maxRetries -and -not $deviceReady) {
-                    $retryCount++
-                    Write-DebugLog "Waiting for device to become ready (attempt $retryCount/$maxRetries)..."
-                    Start-Sleep -Seconds 1
-
-                    $deviceList = Get-AdbDeviceList -adbPath $executables.AdbPath
-                    $device = $deviceList | Where-Object { $_.Serial -eq $config.selectedDevice } | Select-Object -First 1
-
-                    if ($device -and $device.State -eq 'device') {
-                        $deviceReady = $true
-                        Write-DebugLog "Device is now ready!"
-                    }
-                }
-                
-                if (-not $deviceReady) {
-                    if (-not [string]::IsNullOrEmpty($DeviceSerial)) {
-                        Write-ErrorLog "Provided device '$($config.selectedDevice)' is not connected or not in device state."
-                        return
-                    } else {
-                        Write-ErrorLog "Device '$($config.selectedDevice)' is not connected or not in device state. Please select a new one."
-                        $config.selectedDevice = ""
-                        Save-Config $config
-                        Start-Sleep -Seconds 2
-                        continue
-                    }
+                if (-not [string]::IsNullOrEmpty($DeviceSerial)) {
+                    return
+                } else {
+                    $config.selectedDevice = ""
+                    Save-Config $config
+                    Write-InfoLog "Please select a new device." -ForegroundColor Yellow
+                    Start-Sleep -Seconds 2
+                    continue
                 }
             }
         }
-        # 3. Select Device if needed
-        if ([string]::IsNullOrEmpty($config.selectedDevice)) {
+        else {
+            Write-DebugLog "No device selected, showing device selection immediately"
             $selectedDevice = Show-DeviceSelection -adbPath $executables.AdbPath
             if ($null -eq $selectedDevice) { 
                 $config.selectedDevice = ""
@@ -1846,18 +1840,7 @@ function Start-Scrcpy {
             Save-Config $config
             Write-InfoLog "Selected device: $selectedDevice"
         }
-        else {
-            $deviceList = Get-AdbDeviceList -adbPath $executables.AdbPath
-            $device = $deviceList | Where-Object { $_.Serial -eq $config.selectedDevice -and $_.State -eq 'device' }
-            
-            if (-not $device) {
-                Write-ErrorLog "Stored device '$($config.selectedDevice)' is not available. Please select a new one."
-                $config.selectedDevice = ""
-                Start-Sleep -Seconds 2
-                continue
-            }
-        }
-        # 4. Select Preset
+        # 3. Select Preset
         $selectedPreset = $null
         if ($currentPresetName) {
             Write-DebugLog "Looking for preset: $currentPresetName"
@@ -1913,7 +1896,7 @@ function Start-Scrcpy {
         Save-Config $config
         Write-InfoLog "Using preset: $currentPresetName"
 
-        # 5. Build Command Arguments
+        # 4. Build Command Arguments
         try {
             $finalArgs = Build-ScrcpyArguments -SelectedPreset $selectedPreset -SelectedDevice $config.selectedDevice
         }
@@ -1942,7 +1925,7 @@ function Start-Scrcpy {
             $finalArgs += "--record", "`"$fullPath`""
             Write-InfoLog "Recording enabled, output path: $fullPath"
         }
-        # 6. Launch scrcpy
+        # 5. Launch scrcpy
         if (-not $DisableClearHost) { Clear-Host }
         $deviceDisplayName = Get-DeviceDisplayName -adbPath $executables.AdbPath -deviceSerial $config.selectedDevice
         Write-Host "  STARTING SCRCPY SESSION" -ForegroundColor Cyan
@@ -2021,7 +2004,7 @@ function Start-Scrcpy {
             Write-ErrorLog "Failed to launch scrcpy." $_.Exception
         }
         
-        # 7. Post-Session Handling
+        # 6. Post-Session Handling
         switch ($process.ExitCode) {
             0 {
                 Write-InfoLog "scrcpy session ended."
