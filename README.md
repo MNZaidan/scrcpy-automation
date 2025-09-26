@@ -13,13 +13,11 @@ A PowerShell script that provides a menu-driven text user interface for managing
 
 - **Device Management**: Connect to devices using the ADB auto connect feature, connect manually, kill ADB server, and enable ADB over TCP-IP for USB connected device.
 - **Preset Manager**: Create, organize, and search scrcpy through configuration presets using a pre-made configurations or you build your own using the preset manager.
+- **Modern TUI Interface**: Smooth scrolling for long lists with visual overflow indicators
+- **Quick Navigation**: Skip category headings and efficiently browse large preset collections
 - **Quick Launch Presets**: Set presets for one-click launching and favorites for visual marks.
 - **Preset Configurations**: Customize tags for ease of search, resolution, codecs, bitrates, and other advanced scrcpy options.
 - **Convert Recording Format**: Record sessions in MKV format with optional automatic remuxing to MP4 (requires FFmpeg).
-- **User Interface**:
-  - Smooth scrolling for long lists
-  - Keyboard-only navigation support
-  - Visual indicators for overflow content
 
 ## Requirements
 
