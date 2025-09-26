@@ -1773,10 +1773,10 @@ function Invoke-Remux {
             throw "FFmpeg not found. Cannot remux. Please install FFmpeg and add it to your system's PATH."
         }
         
-        Write-InfoLog "Using FFmpeg's native AAC encoder for audio (VBR Quality)." -ForegroundColor Yellow
         $audioCodec = "aac"
         $audioQuality = "1.8" # VBR quality setting, adjust as needed
         
+        Write-InfoLog "Using FFmpeg's native AAC encoder for audio (VBR $audioQuality Quality)." -ForegroundColor Yellow
         Write-Host "Muxing final MP4 file..."
         Invoke-SafeCommand -Command { & $ffmpegPath -i $SourcePath -map 0:v:0 -map 0:a:0 -c:v copy -c:a $audioCodec -q:a $audioQuality -movflags +faststart $mp4Path -y -hide_banner -loglevel error } -ErrorMessage "FFmpeg remuxing failed" -ContinueOnError
 
