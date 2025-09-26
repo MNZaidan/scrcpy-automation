@@ -16,6 +16,10 @@ A PowerShell script that provides a menu-driven text user interface for managing
 - **Quick Launch Presets**: Set presets for one-click launching and favorites for visual marks.
 - **Preset Configurations**: Customize tags for ease of search, resolution, codecs, bitrates, and other advanced scrcpy options.
 - **Convert Recording Format**: Record sessions in MKV format with optional automatic remuxing to MP4 (requires FFmpeg).
+- **User Interface**:
+  - Smooth scrolling for long lists
+  - Keyboard-only navigation support
+  - Visual indicators for overflow content
 
 ## Requirements
 
@@ -115,6 +119,7 @@ These options are available under the "Select Device" menu.
 - Organize presets into categories by using `-` as a prefix and suffix in preset names (e.g., `-Gaming-`, `-Video-`, etc.).
 - Mark presets as quick-launch options. These will appear on the main menu for quick access. The last used preset is also available for quick access. Marking favorite will add a star to the preset for ease of identification.
 - Search for presets using keywords and tags.
+- Navigate long preset lists with smooth scrolling when there are more than 19 items.
 
 ### Recording Options
 
