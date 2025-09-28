@@ -10,11 +10,19 @@ A PowerShell script that provides a menu-driven text user interface for managing
 ![alacritty_GruvBox-Dark_2](img/alacritty_2.png)
 
 ## Table of Contents
+- [Quick Start](#quick-start)
 - [Features](#features)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Troubleshooting](#troubleshooting)
+
+## Quick Start
+1. Install prerequisites: `scoop install scrcpy adb ffmpeg`
+2. Download the script and config file
+3. Run: `.\scrcpy-automation.ps1` using PowerShell 7 or later
+4. Select a device and preset
+5. Enjoy!
 
 ## Features
 
