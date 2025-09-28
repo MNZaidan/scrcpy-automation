@@ -1,6 +1,6 @@
-# scrcpy Automation
+# scrcpy automation
 
-*Pronounced "**scr**een-**c**o**py** Automation"*
+*Pronounced "**scr**een-**c**o**py** automation"*
 
 A PowerShell script that provides a menu-driven text user interface for managing [scrcpy](https://github.com/Genymobile/scrcpy) session with customizable presets, device selection, and recording capabilities.
 
@@ -8,6 +8,13 @@ A PowerShell script that provides a menu-driven text user interface for managing
 ![alacritty_GruvBox-Dark_1](img/alacritty_1.png)
 
 ![alacritty_GruvBox-Dark_2](img/alacritty_2.png)
+
+## Table of Contents
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Troubleshooting](#troubleshooting)
 
 ## Features
 
