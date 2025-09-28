@@ -48,7 +48,7 @@
       "audioBuffer": "50"
     },
     {
-      "name": "Example: Virtual Display",
+      "name": "Virtual Display",
       "description": "--new-display=WIDTHxHEIGHT/DPI makes a new virtual display. Note: this option will kill the running app when scrcpy exits, while --no-vd-destroy-content prevents this",
       "tags": "example, virtual-display, reference",
       "videoCodec": "h264",
@@ -56,7 +56,7 @@
       "otherOptions": "--new-display=800x600/160 --no-vd-destroy-content"
     },
     {
-      "name": "Example: Auto-Launch App",
+      "name": "Auto-Launch App",
       "description": "--start-app=com.example.app or --start-app=?example app  (replace with actual package name)",
       "tags": "example, start-app, reference",
       "videoCodec": "h264",
@@ -64,7 +64,7 @@
       "otherOptions": "--start-app=com.example.app"
     },
     {
-      "name": "Example: Combined Features",
+      "name": "Combined Features",
       "description": "--new-display with --start-app. --no-vd-destroy-content",
       "tags": "example, virtual-display, start-app, reference",
       "videoCodec": "h264",
@@ -72,7 +72,7 @@
       "otherOptions": "--new-display=1024x768/200 --start-app=com.example.app --no-vd-destroy-content"
     },
     {
-      "name": "Example: Game Optimization",
+      "name": "Game Optimization",
       "description": "Settings optimized for gaming",
       "tags": "example, gaming, optimization, reference",
       "videoCodec": "h264",
@@ -82,7 +82,7 @@
       "otherOptions": "--max-fps=60 --turn-screen-off --no-control"
     },
     {
-      "name": "Example: Recording Preset",
+      "name": "Recording Preset",
       "description": "Recording-only mode with no playback, shows touches for tutorials",
       "tags": "example, recording, tutorial, reference",
       "videoCodec": "h264",
@@ -92,7 +92,7 @@
       "otherOptions": "--no-playback --show-touches --window-title=\"Recording Session\""
     },
     {
-      "name": "Example: Audio-Only Control",
+      "name": "Audio-Only Control",
       "description": "Control device with audio but no video (saves bandwidth)",
       "tags": "example, audio-only, control, bandwidth",
       "audioCodec": "opus",
@@ -104,7 +104,7 @@
       "description": "Copy and modify these to your liking"
     },
     {
-      "name": "Template: Video App",
+      "name": "Video App",
       "description": "For YouTube/Netflix. Replace PACKAGE.NAME, adjust display size",
       "tags": "template, video, streaming, virtual-display start-app",
       "videoCodec": "h264",
@@ -114,7 +114,7 @@
       "otherOptions": "--new-display=1920x1080/320 --start-app=PACKAGE.NAME --no-vd-destroy-content --max-fps=60"
     },
     {
-      "name": "Template: Social Media App",
+      "name": "Social Media App",
       "description": "For Instagram/TikTok. Replace PACKAGE.NAME, adjust virtual display size",
       "tags": "template, social, media, virtual-display, start-app",
       "videoCodec": "h264",
@@ -122,7 +122,7 @@
       "otherOptions": "--new-display=1080x1920/320 --start-app=PACKAGE.NAME --no-vd-destroy-content"
     },
     {
-      "name": "Template: Game App",
+      "name": "Game App",
       "description": "For mobile games. Replace PACKAGE.NAME, adjust display size",
       "tags": "template, gaming, virtual-display, start-app",
       "videoCodec": "h264",
@@ -132,7 +132,7 @@
       "otherOptions": "--new-display=1000x1000/240 --start-app=PACKAGE.NAME --no-vd-destroy-content --turn-screen-off --max-fps=60"
     },
     {
-      "name": "Template: Monitor/Debug Mode",
+      "name": "Monitor/Debug Mode",
       "description": "View-only mode for testing/monitoring. Window stays on top, shows touches, no control",
       "tags": "template, monitor, debug, testing, view-only",
       "videoCodec": "h264",
