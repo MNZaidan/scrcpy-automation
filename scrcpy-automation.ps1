@@ -397,44 +397,76 @@ function Show-Menu {
         }
 
         $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-        Write-DebugLog "Key pressed: $($key.VirtualKeyCode)"
+        Write-DebugLog "Key pressed: $($key.VirtualKeyCode), ControlKeyState: $($key.ControlKeyState)"
         $returnKeys = @(27, 88, 13) + $AdditionalReturnKeyCodes  # Escape, X, Enter + other
+        $isCtrlPressed = ($key.ControlKeyState -band 0x0008) -or ($key.ControlKeyState -band 0x0004)
+        
         switch ($key.VirtualKeyCode) {
             27 { return @{ Key = 'Escape'; Index = -1; KeyInfo = $key } } # Escape
             88 { return @{ Key = 'x'; Index = -1; KeyInfo = $key } } # 'x' key
             13 { return @{ Key = 'Enter'; Index = $SelectedIndex; KeyInfo = $key } } # Enter
             38 {
-                # Up Arrow
-                if ($SkipCategoriesOnNavigate) {
-                    $prevIndex = -1
-                    for ($i = $SelectedIndex - 1; $i -ge 0; $i--) {
-                        if (-not ($CategoryIndices -contains $i)) {
-                            $prevIndex = $i
-                            break
-                        }
-                    }
-                    if ($prevIndex -ne -1) { $SelectedIndex = $prevIndex }
+                if ($isCtrlPressed) {
+                    # Ctrl+Up - preset reorder
+                    return @{ Key = 'CtrlUp'; Index = $SelectedIndex; KeyInfo = $key }
                 }
-                else {
-                    if ($SelectedIndex -gt 0) { $SelectedIndex-- }
+                else { 
+                    # Up Arrow
+                    if ($SkipCategoriesOnNavigate) {
+                        $prevIndex = -1
+                        for ($i = $SelectedIndex - 1; $i -ge 0; $i--) {
+                            if (-not ($CategoryIndices -contains $i)) {
+                                $prevIndex = $i
+                                break
+                            }
+                        }
+                        if ($prevIndex -ne -1) { $SelectedIndex = $prevIndex }
+                    }
+                    else {
+                        if ($SelectedIndex -gt 0) { $SelectedIndex-- }
+                    }
                 }
                 continue
             }
             40 {
-                # Down Arrow
-                if ($SkipCategoriesOnNavigate) {
-                    $nextIndex = -1
-                    for ($i = $SelectedIndex + 1; $i -lt $Options.Count; $i++) {
-                        if (-not ($CategoryIndices -contains $i)) {
-                            $nextIndex = $i
-                            break
-                        }
-                    }
-                    if ($nextIndex -ne -1) { $SelectedIndex = $nextIndex }
+                if ($isCtrlPressed) {
+                    # Ctrl+Down - preset reorder
+                    return @{ Key = 'CtrlDown'; Index = $SelectedIndex; KeyInfo = $key }
                 }
                 else {
-                    if ($SelectedIndex -lt ($Options.Count - 1)) { $SelectedIndex++ }
+                    # Down Arrow
+                    if ($SkipCategoriesOnNavigate) {
+                        $nextIndex = -1
+                        for ($i = $SelectedIndex + 1; $i -lt $Options.Count; $i++) {
+                            if (-not ($CategoryIndices -contains $i)) {
+                                $nextIndex = $i
+                                break
+                            }
+                        }
+                        if ($nextIndex -ne -1) { $SelectedIndex = $nextIndex }
+                    }
+                    else {
+                        if ($SelectedIndex -lt ($Options.Count - 1)) { $SelectedIndex++ }
+                    }
                 }
+                continue
+            }
+            33 { # PageUp - Scroll up 5 Items
+                $scrollAmount = [Math]::Min(5, $SelectedIndex)
+                $SelectedIndex = $SelectedIndex - $scrollAmount
+                continue
+            }
+            34 { # PageDown - Scroll down 5 Items
+                $scrollAmount = [Math]::Min(5, $Options.Count - 1 - $SelectedIndex)
+                $SelectedIndex = $SelectedIndex + $scrollAmount
+                continue
+            }
+            36 { # Home key - Jump to top
+                $SelectedIndex = 0
+                continue
+            }
+            35 { # End key - Jump to bottom
+                $SelectedIndex = $Options.Count - 1
                 continue
             }
             default { # Other keys
@@ -1580,26 +1612,27 @@ function Invoke-PresetManager {
         
         $footer = @(
             "[  ↑/↓   ] Navigate      | [Enter] Edit",
-            "[ PageUp ] Move Up       | [ DEL ] Delete",
-            "[PageDown] Move Down     | [  D  ] Duplicate",
-            "[   Q    ] Quick Launch  | [  F  ] Favorite",
-            "[ ESC/X  ] Back"
+            "[ Ctrl+↑ ] Move Up       | [ DEL ] Delete",
+            "[ Ctrl+↓ ] Move Down     | [  D  ] Duplicate",
+            "[ PageUp ] Scroll Up     | [  Q  ] Quick Launch",
+            "[ PageDn ] Scroll Down   | [  F  ] Favorite",
+            "[Home/End] Top/Bottom    | [ ESC/X  ] Back"
         )
 
-        $menuResult    = Show-Menu -Title "Preset Manager" -Options $menuOptions -SelectedIndex $selectedIndex -CategoryIndices $categoryIndices -Footer $footer -AdditionalReturnKeyCodes @(46, 33, 34, 68, 70, 81)
+        $menuResult    = Show-Menu -Title "Preset Manager" -Options $menuOptions -SelectedIndex $selectedIndex -CategoryIndices $categoryIndices -Footer $footer -AdditionalReturnKeyCodes @(46, 68, 70, 81)
         $selectedIndex = $menuResult.Index
         $key           = $menuResult.KeyInfo
 
-        switch ($key.VirtualKeyCode) {
-            27 { 
+        switch ($menuResult.Key) {
+            'Escape' { 
                 Write-DebugLog "User exited preset manager via ESC"
                 return $config 
             }
-            88 { 
+            'x' { 
                 Write-DebugLog "User exited preset manager via X"
                 return $config 
             }
-            13 {
+            'Enter' {
                 if ($selectedIndex -eq 0) {
                     Write-DebugLog "User selected 'Add New Preset or Category'"
                     $newPreset = Show-PresetEditor -ExistingPresets $config.presets
@@ -1631,22 +1664,26 @@ function Invoke-PresetManager {
                     }
                 }
             }
-            46 { # Delete
-                if ($selectedIndex -gt 1 -and $selectedIndex -lt ($menuOptions.Count - 1)) {
-                    $presetIndex = $selectedIndex - 2
-                    $selectedPreset = $config.presets[$presetIndex]
-                    Write-DebugLog "User is deleting $($selectedPreset.name)"
-                    $confirm = Read-Input -Prompt "Are you sure you want to remove '$($selectedPreset.name)'? (y/n)" -DefaultValue "n" -HideDefaultValue
-                    if ($confirm -eq 'y') {
-                        Write-InfoLog "Removed preset: $($selectedPreset.name)"
-                        $config.presets = $config.presets | Where-Object { $_.name -ne $selectedPreset.name }
-                        if ($config.lastUsedPreset -eq $selectedPreset.name) { $config.lastUsedPreset = "" }
-                        if ($selectedIndex -ge ($menuOptions.Count - 2)) { $selectedIndex = $menuOptions.Count - 3 }
-                        Save-Config $config
+            'Default' {
+                switch ($key.VirtualKeyCode) {
+                    46 { # Delete
+                        if ($selectedIndex -gt 1 -and $selectedIndex -lt ($menuOptions.Count - 1)) {
+                            $presetIndex = $selectedIndex - 2
+                            $selectedPreset = $config.presets[$presetIndex]
+                            Write-DebugLog "User is deleting $($selectedPreset.name)"
+                            $confirm = Read-Input -Prompt "Are you sure you want to remove '$($selectedPreset.name)'? (y/n)" -DefaultValue "n" -HideDefaultValue
+                            if ($confirm -eq 'y') {
+                                Write-InfoLog "Removed preset: $($selectedPreset.name)"
+                                $config.presets = $config.presets | Where-Object { $_.name -ne $selectedPreset.name }
+                                if ($config.lastUsedPreset -eq $selectedPreset.name) { $config.lastUsedPreset = "" }
+                                if ($selectedIndex -ge ($menuOptions.Count - 2)) { $selectedIndex = $menuOptions.Count - 3 }
+                                Save-Config $config
+                            }
+                        }
                     }
                 }
             }
-            33 {  # PageUp
+            'CtrlUp' {  # Ctrl+Up - move preset up
                 if ($selectedIndex -gt 2) {
                     $currentIndex = $selectedIndex - 2
                     $presetToMove = $config.presets[$currentIndex]
@@ -1660,7 +1697,7 @@ function Invoke-PresetManager {
                     $selectedIndex--
                 }
             }
-            34 {  # PageDown
+            'CtrlDown' {  # Ctrl+Down - move preset down
                 if ($selectedIndex -gt 1 -and $selectedIndex -lt ($menuOptions.Count - 2)) {
                     $currentIndex = $selectedIndex - 2
                     $presetToMove = $config.presets[$currentIndex]
