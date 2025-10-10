@@ -1282,7 +1282,8 @@ function Build-ScrcpyArguments {
     }
     
     $finalArgs = @("--serial", $SelectedDevice)
-    
+
+    $isWirelessDevice = $SelectedDevice -match '^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+$'
     
     if (-not [string]::IsNullOrEmpty($SelectedPreset.resolution)) { $finalArgs += "-m", $SelectedPreset.resolution }
     if (-not [string]::IsNullOrEmpty($SelectedPreset.videoCodec)) { $finalArgs += "--video-codec", $SelectedPreset.videoCodec }
@@ -1291,7 +1292,20 @@ function Build-ScrcpyArguments {
     if (-not [string]::IsNullOrEmpty($SelectedPreset.audioCodec)) { $finalArgs += "--audio-codec", $SelectedPreset.audioCodec }
     if (-not [string]::IsNullOrEmpty($SelectedPreset.audioBitrate)) { $finalArgs += "--audio-bit-rate", $SelectedPreset.audioBitrate }
     if ($SelectedPreset.audioBuffer -gt 0) { $finalArgs += "--audio-buffer", $SelectedPreset.audioBuffer.ToString() }
-    if (-not [string]::IsNullOrEmpty($SelectedPreset.otherOptions)) { $finalArgs += $SelectedPreset.otherOptions.Split(' ') }
+    
+    if (-not [string]::IsNullOrEmpty($SelectedPreset.otherOptions)) {
+        $otherOptions = $SelectedPreset.otherOptions.Split(' ')
+        if ($isWirelessDevice) {
+            $originalOptions = $otherOptions -join ' '
+            $otherOptions = $otherOptions | Where-Object { $_ -ne '--otg' }
+            if ($otherOptions.Count -ne $originalOptions.Split(' ').Count) {
+                Write-WarnLog "The --otg option has been removed because it's not compatible with wireless devices."
+                Start-Sleep -Seconds 1
+            }
+        }
+        
+        $finalArgs += $otherOptions
+    }
 
     return $finalArgs
 }
