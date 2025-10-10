@@ -1298,10 +1298,6 @@ function Build-ScrcpyArguments {
         if ($isWirelessDevice) {
             $originalOptions = $otherOptions -join ' '
             $otherOptions = $otherOptions | Where-Object { $_ -ne '--otg' }
-            if ($otherOptions.Count -ne $originalOptions.Split(' ').Count) {
-                Write-WarnLog "The --otg option has been removed because it's not compatible with wireless devices."
-                Start-Sleep -Seconds 1
-            }
         }
         
         $finalArgs += $otherOptions
@@ -2017,7 +2013,16 @@ function Start-Scrcpy {
             Write-Host "`nExit scrcpy to stop recording" -ForegroundColor Yellow
         }
         Write-InfoLog "Command: scrcpy $($finalArgs -join ' ')"
-
+        Write-Host ""
+        $isWirelessDevice = $config.selectedDevice -match '^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+$'
+        $hadOtgOption = $false
+        if ($isWirelessDevice -and -not [string]::IsNullOrEmpty($selectedPreset.otherOptions)) {
+            $hadOtgOption = $selectedPreset.otherOptions -match '--otg'
+            if ($hadOtgOption) {
+                Write-WarnLog "The --otg option has been removed in this session because it's not compatible with wireless devices."
+            }
+        }
+        
         try {
             Write-DebugLog "Launching scrcpy process"
                 
