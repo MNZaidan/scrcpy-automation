@@ -2003,8 +2003,8 @@ function Start-Scrcpy {
             Write-InfoLog "Recording enabled, output path: $fullPath"
         }
         # 5. Launch scrcpy
-        if (-not $DisableClearHost) { Clear-Host }
         $deviceDisplayName = Get-DeviceDisplayName -adbPath $executables.AdbPath -deviceSerial $config.selectedDevice
+        if (-not $DisableClearHost) { Clear-Host }
         Write-Host "  STARTING SCRCPY SESSION" -ForegroundColor Cyan
         Write-InfoLog "Preset: '$($selectedPreset.name)'"
         Write-InfoLog "Target Device: $deviceDisplayName"
