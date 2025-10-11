@@ -1296,7 +1296,6 @@ function Build-ScrcpyArguments {
     if (-not [string]::IsNullOrEmpty($SelectedPreset.otherOptions)) {
         $otherOptions = $SelectedPreset.otherOptions.Split(' ')
         if ($isWirelessDevice) {
-            $originalOptions = $otherOptions -join ' '
             $otherOptions = $otherOptions | Where-Object { $_ -ne '--otg' }
         }
         
