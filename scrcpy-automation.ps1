@@ -2154,6 +2154,7 @@ function Start-Scrcpy {
 function Main {
     param([string]$Preset)
     
+    # Direct Launch
     Write-DebugLog "initializing scrcpy-Automation v$ScriptVersion with parameters:"
     if (-not [string]::IsNullOrEmpty($DeviceSerial)) {
         $config.selectedDevice = $DeviceSerial.Trim()
@@ -2216,6 +2217,7 @@ function Main {
         return
     }
 
+    # Interactive Menu loop
     $selectedIndex = 0
     while ($true) {
         $options = @()
