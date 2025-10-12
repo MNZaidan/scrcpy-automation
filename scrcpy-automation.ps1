@@ -2226,7 +2226,10 @@ function Main {
             "No device selected"
         }
         $options += "Device: $deviceDisplayName"
-        if (-not [string]::IsNullOrEmpty($config.quickLaunchPreset)) { $options += "Quick Launch: $($config.quickLaunchPreset)" }
+        if (-not [string]::IsNullOrEmpty($config.quickLaunchPreset) -and 
+            $config.quickLaunchPreset -ne $config.lastUsedPreset) { 
+            $options += "Quick Launch: $($config.quickLaunchPreset)" 
+        }
         if (-not [string]::IsNullOrEmpty($config.lastUsedPreset)) {
             $options += "Last: $($config.lastUsedPreset)"
             $options += "Record Last: $($config.lastUsedPreset)"
