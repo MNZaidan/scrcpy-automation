@@ -63,7 +63,6 @@
 .LINK
     scrcpy Automation    : https://github.com/MNZaidan/scrcpy-automation
     scrcpy Documentation : https://github.com/Genymobile/scrcpy
-    FFmpeg Download      : https://ffmpeg.org/download.html
 #>
 
 #region Parameters
