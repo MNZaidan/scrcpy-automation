@@ -2249,7 +2249,10 @@ function Main {
         }
         $options += "Start scrcpy", "Manage Presets", "Device: $deviceDisplayName$recordingIndicator", "Recording Options", "Exit"
 
-        $menuResult = Show-Menu -Title "scrcpy Automation v$ScriptVersion" -Options $options -SelectedIndex $selectedIndex -Footer @("[ ↑/↓ ] Navigate", "[Enter] Select", "[  ←  ] Device Selection Menu", "[  →  ] Toggle Recording", "[ESC/X] Exit") -AdditionalReturnKeyCodes @(39, 37)
+        $menuResult = Show-Menu -Title "scrcpy Automation v$ScriptVersion" -Options $options -SelectedIndex $selectedIndex -Footer @(
+            "[ ↑/↓ ] Navigate     | [Enter] Select",
+            "[  ←  ] Device Menu  | [  →  ] Toggle Recording", 
+            "[ESC/X] Exit") -AdditionalReturnKeyCodes @(39, 37)
 
         if ($menuResult.Key -eq 'Default' -and $menuResult.KeyInfo.VirtualKeyCode -eq 37) {
             Write-DebugLog "Left arrow pressed - jumping to device selection"
