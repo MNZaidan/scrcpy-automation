@@ -2245,8 +2245,18 @@ function Main {
             $options += "Last: $($config.lastUsedPreset)"
         }
         $options += "Start scrcpy", "Manage Presets", "Device: $deviceDisplayName$recordingIndicator", "Recording Options", "Exit"
-        
-        $menuResult = Show-Menu -Title "scrcpy Automation v$ScriptVersion" -Options $options -SelectedIndex $selectedIndex -Footer @("[ ↑/↓ ] Navigate", "[Enter] Select", "[  →  ] Toggle Recording", "[ESC/X] Exit") -AdditionalReturnKeyCodes @(39)
+
+        $menuResult = Show-Menu -Title "scrcpy Automation v$ScriptVersion" -Options $options -SelectedIndex $selectedIndex -Footer @("[ ↑/↓ ] Navigate", "[Enter] Select", "[  ←  ] Device Selection Menu", "[  →  ] Toggle Recording", "[ESC/X] Exit") -AdditionalReturnKeyCodes @(39, 37)
+
+        if ($menuResult.Key -eq 'Default' -and $menuResult.KeyInfo.VirtualKeyCode -eq 37) {
+            Write-DebugLog "Left arrow pressed - jumping to device selection"
+            $selectedDevice = Show-DeviceSelection -adbPath $executables.AdbPath -currentDevice $config.selectedDevice
+            if ($null -ne $selectedDevice) {
+                $config.selectedDevice = $selectedDevice
+                Save-Config $config
+            }
+            continue
+        }
         
         if ($menuResult.Key -eq 'Default' -and $menuResult.KeyInfo.VirtualKeyCode -eq 39) {
             $script:RecordingMode = -not $script:RecordingMode
