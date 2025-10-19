@@ -177,10 +177,10 @@ function Write-DetailedLog {
     
     if (-not $NoConsoleOutput) {
         switch ($Level) {
-            "ERROR" { Write-Host $consoleOutput -ForegroundColor Red }
-            "WARN"  { Write-Host $consoleOutput -ForegroundColor Yellow }
-            "DEBUG" { Write-Host $consoleOutput -ForegroundColor Magenta }
-            default {             
+            "ERROR"   { Write-Host $consoleOutput -ForegroundColor Red }
+            "WARNING" { Write-Host $consoleOutput -ForegroundColor Yellow }
+            "DEBUG"   { Write-Host $consoleOutput -ForegroundColor Magenta }
+            default {
                 if ($ForegroundColor) {
                     Write-Host $consoleOutput -ForegroundColor $ForegroundColor
                 }
@@ -212,7 +212,7 @@ function Write-WarnLog {
         [string]$Message,
         [string]$ForegroundColor = "Yellow"
     )
-    Write-DetailedLog -Message $Message -Level "WARN"
+    Write-DetailedLog -Message $Message -Level "WARNING"
 }
 
 function Write-InfoLog {
