@@ -1160,6 +1160,7 @@ function Show-RecordingOptions {
         $currentPath = $config.recordingPath
         
         $options = @(
+            "Toggle Recording Mode: $(if ($script:RecordingMode) { 'ON' } else { 'OFF' })",
             "Change Recording Path: $currentPath",
             "Recording Format: $currentFormat",
             "Back"
@@ -1176,6 +1177,11 @@ function Show-RecordingOptions {
         
         switch ($choiceIndex) {
             0 {
+                $script:RecordingMode = -not $script:RecordingMode
+                Write-InfoLog "Recording mode toggled: $script:RecordingMode" -ForegroundColor Green
+                Start-Sleep -Seconds 1
+            }
+            1 {
                 $newPath = Read-Input -Prompt "Enter new recording save path" -DefaultValue $currentPath -HideDefaultValue
                 
                 if (-not [string]::IsNullOrWhiteSpace($newPath)) {
@@ -1200,7 +1206,7 @@ function Show-RecordingOptions {
                     Start-Sleep -Seconds 2
                 }
             }
-            1 {
+            2 {
                 $formatOptions = @("Always MKV", "Record in MKV then remux to MP4")
                 $currentFormatIndex = if ($config.recordingFormat -eq "RemuxToMP4") { 1 } else { 0 }
                 $formatMenuResult = Show-Menu -Title "Select Recording Format" -Options $formatOptions -SelectedIndex $currentFormatIndex -Footer @("[ ↑/↓ ] Navigate", "[Enter] Select", "[ESC/X] Back")
@@ -2154,6 +2160,8 @@ function Start-Scrcpy {
 function Main {
     param([string]$Preset)
     
+    $script:RecordingMode = $false
+    
     # Direct Launch
     Write-DebugLog "initializing scrcpy-Automation v$ScriptVersion with parameters:"
     if (-not [string]::IsNullOrEmpty($DeviceSerial)) {
@@ -2226,38 +2234,57 @@ function Main {
         } else {
             "No device selected"
         }
-        $options += "Device: $deviceDisplayName"
+        
+        $recordingIndicator = if ($script:RecordingMode) { "🔴" } else { "" }
+
         if (-not [string]::IsNullOrEmpty($config.quickLaunchPreset) -and 
             $config.quickLaunchPreset -ne $config.lastUsedPreset) { 
             $options += "Quick Launch: $($config.quickLaunchPreset)" 
         }
         if (-not [string]::IsNullOrEmpty($config.lastUsedPreset)) {
             $options += "Last: $($config.lastUsedPreset)"
-            $options += "Record Last: $($config.lastUsedPreset)"
         }
-        $options += "Start scrcpy", "Record scrcpy", "Manage Presets", "Recording Options", "Exit"
+        $options += "Start scrcpy", "Manage Presets", "Device: $deviceDisplayName$recordingIndicator", "Recording Options", "Exit"
         
-        $menuResult = Show-Menu -Title "scrcpy Automation v$ScriptVersion" -Options $options -SelectedIndex $selectedIndex -Footer @("[ ↑/↓ ] Navigate", "[Enter] Select", "[ESC/X] Exit")
+        $menuResult = Show-Menu -Title "scrcpy Automation v$ScriptVersion" -Options $options -SelectedIndex $selectedIndex -Footer @("[ ↑/↓ ] Navigate", "[Enter] Select", "[  →  ] Toggle Recording", "[ESC/X] Exit") -AdditionalReturnKeyCodes @(39)
+        
+        if ($menuResult.Key -eq 'Default' -and $menuResult.KeyInfo.VirtualKeyCode -eq 39) {
+            $script:RecordingMode = -not $script:RecordingMode
+            Write-InfoLog "Recording mode toggled: $script:RecordingMode"
+            continue
+        }
+        
         if ($menuResult.Key -in @('Escape', 'x')) { Write-Host "Exiting..."; return }
         $selectedIndex = $menuResult.Index
         $chosenOption = $options[$selectedIndex]
         Write-DebugLog "User selected main menu option: $chosenOption"
 
-        if ($chosenOption.StartsWith("Device")) {
+
+        if ($chosenOption.StartsWith("Quick Launch")) {
+            Start-Scrcpy -executables $executables -config $config -InitialPresetName $config.quickLaunchPreset -IsRecording:$script:RecordingMode 
+        }
+        elseif ($chosenOption.StartsWith("Last")) {
+            Start-Scrcpy -executables $executables -config $config -InitialPresetName $config.lastUsedPreset -IsRecording:$script:RecordingMode 
+        }
+        elseif ($chosenOption -eq "Start scrcpy") {
+            Start-Scrcpy -executables $executables -config $config -IsRecording:$script:RecordingMode 
+        }
+        elseif ($chosenOption -eq "Manage Presets") {  
+            $config = Invoke-PresetManager -config $config
+        }
+        elseif ($chosenOption.StartsWith("Device")) {
             $selectedDevice = Show-DeviceSelection -adbPath $executables.AdbPath -currentDevice $config.selectedDevice
             if ($null -ne $selectedDevice) {
                 $config.selectedDevice = $selectedDevice
                 Save-Config $config
             }
         }
-        elseif ($chosenOption.StartsWith("Quick Launch")) { Start-Scrcpy -executables $executables -config $config -InitialPresetName $config.quickLaunchPreset }
-        elseif ($chosenOption.StartsWith("Last")) { Start-Scrcpy -executables $executables -config $config -InitialPresetName $config.lastUsedPreset }
-        elseif ($chosenOption.StartsWith("Record Last")) { Start-Scrcpy -executables $executables -config $config -IsRecording -InitialPresetName $config.lastUsedPreset }
-        elseif ($chosenOption -eq "Start scrcpy") { Start-Scrcpy -executables $executables -config $config }
-        elseif ($chosenOption -eq "Record scrcpy") { Start-Scrcpy -executables $executables -config $config -IsRecording }
-        elseif ($chosenOption -eq "Manage Presets") { $config = Invoke-PresetManager -config $config }
-        elseif ($chosenOption -eq "Recording Options") { $config = Show-RecordingOptions -config $config }
-        elseif ($chosenOption -eq "Exit") { Write-Host "Exiting..."; return }
+        elseif ($chosenOption -eq "Recording Options") {
+            $config = Show-RecordingOptions -config $config
+        }
+        elseif ($chosenOption -eq "Exit") {
+            Write-Host "Exiting..."; return
+        }
     }
 }
 #endregion
