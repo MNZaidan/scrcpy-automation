@@ -1853,6 +1853,7 @@ function Start-Scrcpy {
         $executables,
         $config,
         [switch]$IsRecording,
+        [switch]$IsQuickLaunch,
         [string]$InitialPresetName = $null,
         [string]$DeviceSerial = $null
     )
@@ -1973,8 +1974,10 @@ function Start-Scrcpy {
         }
         
         $currentPresetName     = $selectedPreset.name
-        $config.lastUsedPreset = $currentPresetName
-        Save-Config $config
+        if (-not $IsQuickLaunch) {
+            $config.lastUsedPreset = $currentPresetName
+            Save-Config $config
+        }
         Write-InfoLog "Using preset: $currentPresetName"
 
         # 4. Build Command Arguments
@@ -2271,7 +2274,7 @@ function Main {
 
 
         if ($chosenOption.StartsWith("Quick Launch")) {
-            Start-Scrcpy -executables $executables -config $config -InitialPresetName $config.quickLaunchPreset -IsRecording:$script:RecordingMode 
+            Start-Scrcpy -executables $executables -config $config -InitialPresetName $config.quickLaunchPreset -IsRecording:$script:RecordingMode -IsQuickLaunch
         }
         elseif ($chosenOption.StartsWith("Last")) {
             Start-Scrcpy -executables $executables -config $config -InitialPresetName $config.lastUsedPreset -IsRecording:$script:RecordingMode 
