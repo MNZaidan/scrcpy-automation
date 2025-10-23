@@ -704,7 +704,8 @@ function Invoke-AdbTcpip {
         Write-InfoLog $result
         $global:LastAdbOperation = Get-Date
         Write-InfoLog "`nADB tcpip command finished. " -ForegroundColor Green
-        Write-Host "You can now connect your device wirelessly using `adb connect <device-ip>:$port`."
+        Write-Host "You can now connect your device wirelessly using the adb connect feature or manually using:"
+        Write-Host "  adb connect <device-ip>:$port`n" -ForegroundColor Cyan
     }
     catch {
         Write-ErrorLog "An error occurred while running adb tcpip." $_.Exception
