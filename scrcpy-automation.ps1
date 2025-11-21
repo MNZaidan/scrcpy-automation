@@ -1631,7 +1631,7 @@ function Invoke-PresetManager {
             "[ Ctrl+↓ ] Move Down     | [  D  ] Duplicate",
             "[ PageUp ] Scroll Up     | [  Q  ] Quick Launch",
             "[ PageDn ] Scroll Down   | [  F  ] Favorite",
-            "[Home/End] Top/Bottom    | [ ESC/X  ] Back"
+            "[Home/End] Top/Bottom    | [ESC/X] Back"
         )
 
         $menuResult    = Show-Menu -Title "Preset Manager" -Options $menuOptions -SelectedIndex $selectedIndex -CategoryIndices $categoryIndices -Footer $footer -AdditionalReturnKeyCodes @(46, 68, 70, 81)
