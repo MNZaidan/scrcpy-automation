@@ -1696,6 +1696,63 @@ function Invoke-PresetManager {
                             }
                         }
                     }
+                    68 { # 'D' key - Duplicate
+                        if ($selectedIndex -gt 1 -and $selectedIndex -lt ($menuOptions.Count - 1)) {
+                            $presetIndex    = $selectedIndex - 2
+                            $selectedPreset = $config.presets[$presetIndex]
+                            Write-DebugLog "User is duplicating $($selectedPreset.name)"
+                            $newPreset      = $selectedPreset.psobject.Copy()
+                            $newPreset.name = "$($newPreset.name) (copy)"
+                            
+                            $editedPreset = Show-PresetEditor -Preset $newPreset -ExistingPresets $config.presets
+                            if ($editedPreset) {
+                                $tempPresets = [System.Collections.Generic.List[object]]::new($config.presets)
+                                $tempPresets.Insert($presetIndex + 1, [pscustomobject]$editedPreset)
+                                $config.presets = $tempPresets.ToArray()
+                                Save-Config $config
+                                $selectedIndex = $presetIndex + 3
+                            }
+                        }
+                    }
+                    70 { # 'F' key - Favorite
+                        if ($selectedIndex -gt 1 -and $selectedIndex -lt ($menuOptions.Count - 1)) {
+                            $presetIndex = $selectedIndex - 2
+                            $current     = $config.presets[$presetIndex]
+                            Write-DebugLog "User is toggling favorite for $($current.name)"
+        
+                            if ($current.PSObject.Properties.Name -contains 'favorite' -and $current.favorite -eq $true) {
+                                Write-InfoLog "Unfavorited preset: $($current.name)"
+                                $current.psobject.Properties.Remove('favorite')
+                            }
+                            else {
+                                Write-InfoLog "Favorited preset: $($current.name)"
+                                if ($current.PSObject.Properties.Name -contains 'favorite') {
+                                    $current.favorite = $true
+                                }
+                                else {
+                                    $current | Add-Member -NotePropertyName favorite -NotePropertyValue $true -PassThru
+                                }
+                            }
+                            Save-Config $config
+                        }
+                    }
+                    81 { # 'Q' key - Quick Launch
+                        if ($selectedIndex -gt 1 -and $selectedIndex -lt ($menuOptions.Count - 1)) {
+                            $presetIndex    = $selectedIndex - 2
+                            $selectedPreset = $config.presets[$presetIndex]
+                            Write-DebugLog "User is setting $($selectedPreset.name) as the Quick Launch preset."
+                            if (Find-IsCategory -Preset $selectedPreset) {
+                                Write-Host "Categories cannot be set as the Quick Launch preset." -ForegroundColor Red
+                                Start-Sleep -Seconds 2
+                                continue
+                            }
+                            if ($config.quickLaunchPreset -eq $selectedPreset.name) {
+                                $config.quickLaunchPreset = ""
+                            }
+                            else { $config.quickLaunchPreset = $selectedPreset.name }
+                            Save-Config $config
+                        }
+                    }
                 }
             }
             'CtrlUp' {  # Ctrl+Up - move preset up
@@ -1724,63 +1781,6 @@ function Invoke-PresetManager {
                     $config.presets = $tempPresets.ToArray()
                     Save-Config $config
                     $selectedIndex++
-                }
-            }
-            68 { # 'D' key - Duplicate
-                if ($selectedIndex -gt 1 -and $selectedIndex -lt ($menuOptions.Count - 1)) {
-                    $presetIndex    = $selectedIndex - 2
-                    $selectedPreset = $config.presets[$presetIndex]
-                    Write-DebugLog "User is duplicating $($selectedPreset.name)"
-                    $newPreset      = $selectedPreset.psobject.Copy()
-                    $newPreset.name = "$($newPreset.name) (copy)"
-                    
-                    $editedPreset = Show-PresetEditor -Preset $newPreset -ExistingPresets $config.presets
-                    if ($editedPreset) {
-                        $tempPresets = [System.Collections.Generic.List[object]]::new($config.presets)
-                        $tempPresets.Insert($presetIndex + 1, [pscustomobject]$editedPreset)
-                        $config.presets = $tempPresets.ToArray()
-                        Save-Config $config
-                        $selectedIndex = $presetIndex + 3
-                    }
-                }
-            }
-            70 { # 'F' key - Favorite
-                if ($selectedIndex -gt 1 -and $selectedIndex -lt ($menuOptions.Count - 1)) {
-                    $presetIndex = $selectedIndex - 2
-                    $current     = $config.presets[$presetIndex]
-                    Write-DebugLog "User is toggling favorite for $($current.name)"
-
-                    if ($current.PSObject.Properties.Name -contains 'favorite' -and $current.favorite -eq $true) {
-                        Write-InfoLog "Unfavorited preset: $($current.name)"
-                        $current.psobject.Properties.Remove('favorite')
-                    }
-                    else {
-                        Write-InfoLog "Favorited preset: $($current.name)"
-                        if ($current.PSObject.Properties.Name -contains 'favorite') {
-                            $current.favorite = $true
-                        }
-                        else {
-                            $current | Add-Member -NotePropertyName favorite -NotePropertyValue $true -PassThru
-                        }
-                    }
-                    Save-Config $config
-                }
-            }
-            81 { # 'Q' key - Quick Launch
-                if ($selectedIndex -gt 1 -and $selectedIndex -lt ($menuOptions.Count - 1)) {
-                    $presetIndex    = $selectedIndex - 2
-                    $selectedPreset = $config.presets[$presetIndex]
-                    Write-DebugLog "User is setting $($selectedPreset.name) as the Quick Launch preset."
-                    if (Find-IsCategory -Preset $selectedPreset) {
-                        Write-Host "Categories cannot be set as the Quick Launch preset." -ForegroundColor Red
-                        Start-Sleep -Seconds 2
-                        continue
-                    }
-                    if ($config.quickLaunchPreset -eq $selectedPreset.name) {
-                        $config.quickLaunchPreset = ""
-                    }
-                    else { $config.quickLaunchPreset = $selectedPreset.name }
-                    Save-Config $config
                 }
             }
         }
