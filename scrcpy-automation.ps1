@@ -2167,7 +2167,7 @@ function Main {
     $script:RecordingMode = $false
     
     # Direct Launch
-    Write-DebugLog "initializing scrcpy-Automation v$ScriptVersion with parameters:"
+    Write-InfoLog "initializing scrcpy-Automation v$ScriptVersion"
     if (-not [string]::IsNullOrEmpty($DeviceSerial)) {
         $config.selectedDevice = $DeviceSerial.Trim()
         Write-DebugLog "-DeviceSerial: $DeviceSerial" 
