@@ -1505,13 +1505,13 @@ function Show-PresetEditor {
                 # 'S' key
                 $newName = $preset.name.Trim()
                 if ([string]::IsNullOrWhiteSpace($newName)) {
-                    Write-ErrorLog "`nPreset Name cannot be empty." -ForegroundColor Red
+                    Write-WarnLog "`nPreset Name cannot be empty." -ForegroundColor Red
                     Start-Sleep -Seconds 2
                     continue
                 }
                 $isNameDuplicate = $ExistingPresets | Where-Object { $_.name -ne $originalName -and $_.name -eq $newName }
                 if ($isNameDuplicate) {
-                    Write-ErrorLog "`nError: A preset with the name '$newName' already exists."
+                    Write-WarnLog "`n A preset with the name '$newName' already exists."
                     Start-Sleep -Seconds 3
                     continue
                 }
@@ -1744,13 +1744,14 @@ function Invoke-PresetManager {
                         Write-DebugLog "User is setting $($selectedPreset.name) as Quick Launch slot $number"
                         
                         if (Find-IsCategory -Preset $selectedPreset) {
-                            Write-Host "Categories cannot be set as Quick Launch presets." -ForegroundColor Red
+                            Write-WarnLog "Categories cannot be set as Quick Launch presets." -ForegroundColor Red
                             Start-Sleep -Seconds 2
                             continue
                         }
                         
                         $currentPresetInSlot = $config.quickLaunchPresets[$number.ToString()]
                         if (-not [string]::IsNullOrWhiteSpace($currentPresetInSlot) -and $currentPresetInSlot -ne $selectedPreset.name) {
+                            Write-DebugLog "Quick Launch slot $number is already assigned to '$currentPresetInSlot'"
                             $confirm = Read-Input -Prompt "Slot $number is already assigned to '$currentPresetInSlot'. Replace it? (y/n)" -DefaultValue "y" -HideDefaultValue
                             if ($confirm -ne 'y') {
                                 continue
