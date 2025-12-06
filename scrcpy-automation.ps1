@@ -2367,29 +2367,48 @@ function Main {
         $recordingIndicator = if ($script:RecordingMode) { "🔴" } else { "" }
 
         $hasQuickLaunch = $false
+        $presetIndices = @()
+        $presetDisplayNames = @()
+        
+        # Quick launch presets
         for ($i = 1; $i -le 9; $i++) {
             $presetName = $config.quickLaunchPresets[$i.ToString()]
             if (-not [string]::IsNullOrWhiteSpace($presetName)) {
                 $hasQuickLaunch = $true
-                $preset = $config.presets | Where-Object { $_.name -eq $presetName } | Select-Object -First 1
-                $description = if ($preset -and $preset.description) { 
-                    if ($preset.description.Length -gt 40) { $preset.description.Substring(0, 40) + "..." } else { $preset.description }
-                } else { "" }
-                $options += "[$i] $presetName - $description"
+                $options += "[$i] $presetName"
+                $presetIndices += $options.Count - 1
+                $presetDisplayNames += $presetName
             }
         }
         
+        $lastUsedIndex = $null
         if (-not [string]::IsNullOrEmpty($config.lastUsedPreset)) {
-            $options += "Last: $($config.lastUsedPreset)"
+            $options += "[0] $($config.lastUsedPreset)"
+            $lastUsedIndex = $options.Count - 1
+            $presetIndices += $lastUsedIndex
+            $presetDisplayNames += $config.lastUsedPreset
         }
+        
+        # Add spacer after last used preset
+        if ($null -ne $lastUsedIndex) {
+            $options += ""
+        }
+        
+        # Main menu options
         $options += "Start scrcpy", "Manage Presets", "Device: $deviceDisplayName$recordingIndicator", "Recording Options", "Exit"
-
+        
+        $spacerIndices = @()
+        if ($null -ne $lastUsedIndex) {
+            # Spacer after last used preset
+            $spacerIndices += $lastUsedIndex + 1
+        }
+        
         $footer = @()
         if ($config.showFooter) {
             $footer += "[ ↑/↓ ] Navigate     | [Enter] Select"
-            $footer += "[ 1-9 ] Quick Launch | [  ←  ] Device Menu"
-            $footer += "[  →  ] Toggle Record| [F1] Toggle Footer"
-            $footer += "[ESC/X] Exit"
+            $footer += "[ 1-9 ] Quick Launch | [  0  ] Last Used Preset"
+            $footer += "[  ←  ] Device Menu  | [  →  ] Toggle Record"
+            $footer += "[ F1  ] Hide Footer  | [ESC/X] Exit"
         } else {
             $footer += "[F1] Show Footer"
         }
@@ -2399,7 +2418,14 @@ function Main {
 
         if ($menuResult.Key -eq 'Number') {
             $number = $menuResult.Number
-            if ($number -ge 1 -and $number -le 9) {
+            if ($number -eq 0) {
+                if (-not [string]::IsNullOrEmpty($config.lastUsedPreset)) {
+                    Write-InfoLog "Launching last used preset [$number]: $($config.lastUsedPreset)"
+                    Start-Scrcpy -executables $executables -config $config -InitialPresetName $config.lastUsedPreset -IsRecording:$script:RecordingMode
+                    continue
+                }
+            }
+            elseif ($number -ge 1 -and $number -le 9) {
                 $presetName = $config.quickLaunchPresets[$number.ToString()]
                 if (-not [string]::IsNullOrWhiteSpace($presetName)) {
                     Write-InfoLog "Launching quick launch preset [$number]: $presetName"
@@ -2432,13 +2458,16 @@ function Main {
         $chosenOption = $options[$selectedIndex]
         Write-DebugLog "User selected main menu option: $chosenOption"
 
-
-        if ($chosenOption.StartsWith("[")) {
-            $presetName = ($chosenOption -split '] ')[1] -split ' - ' | Select-Object -First 1
-            Start-Scrcpy -executables $executables -config $config -InitialPresetName $presetName -IsRecording:$script:RecordingMode -IsQuickLaunch
-        }
-        elseif ($chosenOption.StartsWith("Last")) {
-            Start-Scrcpy -executables $executables -config $config -InitialPresetName $config.lastUsedPreset -IsRecording:$script:RecordingMode 
+        if ($presetIndices -contains $selectedIndex) {
+            $presetIndex = [array]::IndexOf($presetIndices, $selectedIndex)
+            $presetName = $presetDisplayNames[$presetIndex]
+            
+            if ($selectedIndex -eq $lastUsedIndex) {
+                Start-Scrcpy -executables $executables -config $config -InitialPresetName $presetName -IsRecording:$script:RecordingMode
+            }
+            else {
+                Start-Scrcpy -executables $executables -config $config -InitialPresetName $presetName -IsRecording:$script:RecordingMode -IsQuickLaunch
+            }
         }
         elseif ($chosenOption -eq "Start scrcpy") {
             Start-Scrcpy -executables $executables -config $config -IsRecording:$script:RecordingMode 
