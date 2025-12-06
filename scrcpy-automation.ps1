@@ -296,9 +296,21 @@ function Compare-ConfigChanges {
     param($oldConfig, $newConfig)
     $changes = @()
     
-    $properties = @('recordingPath', 'recordingFormat', 'lastUsedPreset', 'quickLaunchPreset', 'selectedDevice', 'showFooter')
+    $properties = @('recordingPath', 'recordingFormat', 'lastUsedPreset', 'quickLaunchPresets', 'selectedDevice', 'showFooter')
     foreach ($prop in $properties) {
-        if ($oldConfig.$prop -ne $newConfig.$prop) {
+        if ($prop -eq 'quickLaunchPresets') {
+            if ($oldConfig.$prop.Count -ne $newConfig.$prop.Count) {
+                $changes += "$prop count changed from $($oldConfig.$prop.Count) to $($newConfig.$prop.Count)"
+            } else {
+                for ($i = 1; $i -le 9; $i++) {
+                    if ($oldConfig.$prop[$i.ToString()] -ne $newConfig.$prop[$i.ToString()]) {
+                        $oldVal = if ($oldConfig.$prop[$i.ToString()]) { $oldConfig.$prop[$i.ToString()] } else { "[empty]" }
+                        $newVal = if ($newConfig.$prop[$i.ToString()]) { $newConfig.$prop[$i.ToString()] } else { "[empty]" }
+                        $changes += "$prop slot $i changed from '$oldVal' to '$newVal'"
+                    }
+                }
+            }
+        } elseif ($oldConfig.$prop -ne $newConfig.$prop) {
             $changes += "$prop changed from '$($oldConfig.$prop)' to '$($newConfig.$prop)'"
         }
     }
@@ -481,6 +493,9 @@ function Show-Menu {
             default { # Other keys
                 if ($returnKeys -contains $key.VirtualKeyCode) {
                     return @{ Key = 'Default'; Index = $SelectedIndex; KeyInfo = $key; ShowFooter = $ShowFooter }
+                } elseif ($key.VirtualKeyCode -ge 48 -and $key.VirtualKeyCode -le 57) {
+                    # Number keys 0-9 (0 is 48, 9 is 57)
+                    return @{ Key = 'Number'; Index = $SelectedIndex; Number = $key.VirtualKeyCode - 48; KeyInfo = $key; ShowFooter = $ShowFooter }
                 }
             }
         }
@@ -979,7 +994,7 @@ function Get-Config {
             recordingPath     = Join-Path $PSScriptRoot "recordings"
             recordingFormat   = "AlwaysMKV"
             lastUsedPreset    = ""
-            quickLaunchPreset = ""
+            quickLaunchPresets = [ordered]@{}
             selectedDevice    = ""
             showFooter        = $true
             presets           = @(
@@ -1015,7 +1030,15 @@ function Get-Config {
             recordingPath     = if ($loadedConfig.ContainsKey('recordingPath')) { $loadedConfig.recordingPath } else { Join-Path $PSScriptRoot "recordings" }
             recordingFormat   = if ($loadedConfig.ContainsKey('recordingFormat')) { $loadedConfig.recordingFormat } else { "AlwaysMKV" }
             lastUsedPreset    = if ($loadedConfig.ContainsKey('lastUsedPreset')) { $loadedConfig.lastUsedPreset } else { "" }
-            quickLaunchPreset = if ($loadedConfig.ContainsKey('quickLaunchPreset')) { $loadedConfig.quickLaunchPreset } else { "" }
+            quickLaunchPresets = if ($loadedConfig.ContainsKey('quickLaunchPresets')) { 
+                $quickLaunchPresets = [ordered]@{}
+                for ($i = 1; $i -le 9; $i++) {
+                    $quickLaunchPresets[$i.ToString()] = if ($loadedConfig.quickLaunchPresets.ContainsKey($i.ToString())) { 
+                        $loadedConfig.quickLaunchPresets[$i.ToString()] 
+                    } else { "" }
+                }
+                $quickLaunchPresets
+            } else { [ordered]@{} }
             selectedDevice    = if ($loadedConfig.ContainsKey('selectedDevice')) { $loadedConfig.selectedDevice } else { "" }
             showFooter        = if ($loadedConfig.ContainsKey('showFooter')) { [bool]$loadedConfig.showFooter } else { $true }
             presets           = if ($loadedConfig.ContainsKey('presets')) {
@@ -1050,7 +1073,7 @@ function Get-Config {
                 recordingPath     = Join-Path $PSScriptRoot "recordings"
                 recordingFormat   = "AlwaysMKV"
                 lastUsedPreset    = ""
-                quickLaunchPreset = ""
+                quickLaunchPresets = [ordered]@{}
                 selectedDevice    = ""
                 showFooter        = $true
                 presets           = @(
@@ -1108,7 +1131,7 @@ function Save-Config {
             recordingPath     = $config.recordingPath
             recordingFormat   = $config.recordingFormat
             lastUsedPreset    = $config.lastUsedPreset
-            quickLaunchPreset = $config.quickLaunchPreset
+            quickLaunchPresets = $config.quickLaunchPresets
             selectedDevice    = $deviceValue
             showFooter        = $config.showFooter
             presets           = @()
@@ -1273,7 +1296,6 @@ function Get-FormattedPresetList {
         $Config
     )
     
-    $quickLaunchPresetName = $Config.quickLaunchPreset
     $maxNameLength = ($Config.presets.name | Measure-Object -Maximum -Property Length).Maximum
     if ($null -eq $maxNameLength) { $maxNameLength = 0 }
 
@@ -1284,13 +1306,48 @@ function Get-FormattedPresetList {
         }
         $name = $_.name.PadRight($maxNameLength)
         $FavoriteStar = if ($_.PSObject.Properties.Name -contains 'favorite' -and $_.favorite) { '★ ' } else { '  ' }
-        $quickLaunchStar = if ($_.name -eq $quickLaunchPresetName) { '► ' } else { '  ' }
         
-        "$quickLaunchStar$FavoriteStar$name - $description"
+        $quickLaunchNumber = ""
+        foreach ($slot in 1..9) {
+            if ($Config.quickLaunchPresets[$slot.ToString()] -eq $_.name) {
+                $quickLaunchNumber = "[$slot] "
+                break
+            }
+        }
+        
+        "$quickLaunchNumber$FavoriteStar$name - $description"
     }
     if ($null -eq $Config.presets -or $Config.presets.Count -eq 0) {
         return @()
     }
+}
+
+function Get-QuickLaunchPreview {
+    param (
+        [Parameter(Mandatory = $true)]
+        $Config
+    )
+    
+    $previewLines = @()
+    $hasQuickLaunch = $false
+    
+    for ($i = 1; $i -le 9; $i++) {
+        $presetName = $Config.quickLaunchPresets[$i.ToString()]
+        if (-not [string]::IsNullOrWhiteSpace($presetName)) {
+            $hasQuickLaunch = $true
+            $preset = $Config.presets | Where-Object { $_.name -eq $presetName } | Select-Object -First 1
+            $description = if ($preset -and $preset.description) { 
+                if ($preset.description.Length -gt 40) { $preset.description.Substring(0, 40) + "..." } else { $preset.description }
+            } else { "" }
+            $previewLines += "[$i] $presetName - $description"
+        }
+    }
+    
+    if (-not $hasQuickLaunch) {
+        $previewLines += "No quick launch presets assigned"
+    }
+    
+    return $previewLines
 }
 
 function Build-ScrcpyArguments {
@@ -1643,6 +1700,9 @@ function Invoke-PresetManager {
             }
         }
         
+        # quick launch preview
+        $quickLaunchPreview = Get-QuickLaunchPreview -Config $config
+        
         $footer = @()
         if ($config.showFooter) {
             $footer += "[  ↑/↓   ] Navigate      | [Enter] Edit"
@@ -1651,6 +1711,11 @@ function Invoke-PresetManager {
             $footer += "[ PageUp ] Scroll Up     | [  F  ] Favorite"
             $footer += "[ PageDn ] Scroll Down   | [ESC/X] Back"
             $footer += "[Home/End] Top/Bottom    | [ F1  ] Toggle Footer"
+            $footer += ""
+            $footer += "Quick Launch Slots:"
+            foreach ($line in $quickLaunchPreview) {
+                $footer += "  $line"
+            }
         } else {
             $footer += "[F1] Show Footer"
         }
@@ -1668,6 +1733,48 @@ function Invoke-PresetManager {
             'x' { 
                 Write-DebugLog "User exited preset manager via X"
                 return $config 
+            }
+            'Number' {
+                $number = $menuResult.Number
+                if ($selectedIndex -gt 1 -and $selectedIndex -lt ($menuOptions.Count - 1)) {
+                    $presetIndex    = $selectedIndex - 2
+                    $selectedPreset = $config.presets[$presetIndex]
+                    
+                    if ($number -ge 1 -and $number -le 9) {
+                        Write-DebugLog "User is setting $($selectedPreset.name) as Quick Launch slot $number"
+                        
+                        if (Find-IsCategory -Preset $selectedPreset) {
+                            Write-Host "Categories cannot be set as Quick Launch presets." -ForegroundColor Red
+                            Start-Sleep -Seconds 2
+                            continue
+                        }
+                        
+                        $currentPresetInSlot = $config.quickLaunchPresets[$number.ToString()]
+                        if (-not [string]::IsNullOrWhiteSpace($currentPresetInSlot) -and $currentPresetInSlot -ne $selectedPreset.name) {
+                            $confirm = Read-Input -Prompt "Slot $number is already assigned to '$currentPresetInSlot'. Replace it? (y/n)" -DefaultValue "y" -HideDefaultValue
+                            if ($confirm -ne 'y') {
+                                continue
+                            }
+                        }
+                        
+                        foreach ($slot in 1..9) {
+                            if ($config.quickLaunchPresets[$slot.ToString()] -eq $selectedPreset.name) {
+                                $config.quickLaunchPresets[$slot.ToString()] = ""
+                            }
+                        }
+                        
+                        if ($config.quickLaunchPresets[$number.ToString()] -eq $selectedPreset.name) {
+                            $config.quickLaunchPresets[$number.ToString()] = ""
+                            Write-InfoLog "Removed preset from Quick Launch slot $number" -ForegroundColor Yellow
+                        } else {
+                            $config.quickLaunchPresets[$number.ToString()] = $selectedPreset.name
+                            Write-InfoLog "Assigned '$($selectedPreset.name)' to Quick Launch slot $number" -ForegroundColor Green
+                        }
+                        
+                        Save-Config $config
+                        Start-Sleep -Seconds 1
+                    }
+                }
             }
             'Enter' {
                 if ($selectedIndex -eq 0) {
@@ -1711,6 +1818,13 @@ function Invoke-PresetManager {
                             $confirm = Read-Input -Prompt "Are you sure you want to remove '$($selectedPreset.name)'? (y/n)" -DefaultValue "n" -HideDefaultValue
                             if ($confirm -eq 'y') {
                                 Write-InfoLog "Removed preset: $($selectedPreset.name)"
+                                
+                                foreach ($slot in 1..9) {
+                                    if ($config.quickLaunchPresets[$slot.ToString()] -eq $selectedPreset.name) {
+                                        $config.quickLaunchPresets[$slot.ToString()] = ""
+                                    }
+                                }
+                                
                                 $config.presets = $config.presets | Where-Object { $_.name -ne $selectedPreset.name }
                                 if ($config.lastUsedPreset -eq $selectedPreset.name) { $config.lastUsedPreset = "" }
                                 if ($selectedIndex -ge ($menuOptions.Count - 2)) { $selectedIndex = $menuOptions.Count - 3 }
@@ -1755,23 +1869,6 @@ function Invoke-PresetManager {
                                     $current | Add-Member -NotePropertyName favorite -NotePropertyValue $true -PassThru
                                 }
                             }
-                            Save-Config $config
-                        }
-                    }
-                    81 { # 'Q' key - Quick Launch
-                        if ($selectedIndex -gt 1 -and $selectedIndex -lt ($menuOptions.Count - 1)) {
-                            $presetIndex    = $selectedIndex - 2
-                            $selectedPreset = $config.presets[$presetIndex]
-                            Write-DebugLog "User is setting $($selectedPreset.name) as the Quick Launch preset."
-                            if (Find-IsCategory -Preset $selectedPreset) {
-                                Write-Host "Categories cannot be set as the Quick Launch preset." -ForegroundColor Red
-                                Start-Sleep -Seconds 2
-                                continue
-                            }
-                            if ($config.quickLaunchPreset -eq $selectedPreset.name) {
-                                $config.quickLaunchPreset = ""
-                            }
-                            else { $config.quickLaunchPreset = $selectedPreset.name }
                             Save-Config $config
                         }
                     }
@@ -1937,7 +2034,9 @@ function Start-Scrcpy {
         }
         else {
             Write-DebugLog "No device selected, showing device selection immediately"
-            $selectedDevice = Show-DeviceSelection -adbPath $executables.AdbPath
+            $deviceResult = Show-DeviceSelection -adbPath $executables.AdbPath -ShowFooter $config.showFooter
+            $selectedDevice = $deviceResult[0]
+            $config.showFooter = $deviceResult[1]
             if ($null -eq $selectedDevice) { 
                 $config.selectedDevice = ""
                 Save-Config $config
@@ -2266,10 +2365,19 @@ function Main {
         
         $recordingIndicator = if ($script:RecordingMode) { "🔴" } else { "" }
 
-        if (-not [string]::IsNullOrEmpty($config.quickLaunchPreset) -and 
-            $config.quickLaunchPreset -ne $config.lastUsedPreset) { 
-            $options += "Quick Launch: $($config.quickLaunchPreset)" 
+        $hasQuickLaunch = $false
+        for ($i = 1; $i -le 9; $i++) {
+            $presetName = $config.quickLaunchPresets[$i.ToString()]
+            if (-not [string]::IsNullOrWhiteSpace($presetName)) {
+                $hasQuickLaunch = $true
+                $preset = $config.presets | Where-Object { $_.name -eq $presetName } | Select-Object -First 1
+                $description = if ($preset -and $preset.description) { 
+                    if ($preset.description.Length -gt 40) { $preset.description.Substring(0, 40) + "..." } else { $preset.description }
+                } else { "" }
+                $options += "[$i] $presetName - $description"
+            }
         }
+        
         if (-not [string]::IsNullOrEmpty($config.lastUsedPreset)) {
             $options += "Last: $($config.lastUsedPreset)"
         }
@@ -2287,6 +2395,18 @@ function Main {
 
         $menuResult = Show-Menu -Title "scrcpy Automation v$ScriptVersion" -Options $options -SelectedIndex $selectedIndex -Footer $footer -AdditionalReturnKeyCodes @(39, 37) -ShowFooter $config.showFooter
         $config.showFooter = $menuResult.ShowFooter
+
+        if ($menuResult.Key -eq 'Number') {
+            $number = $menuResult.Number
+            if ($number -ge 1 -and $number -le 9) {
+                $presetName = $config.quickLaunchPresets[$number.ToString()]
+                if (-not [string]::IsNullOrWhiteSpace($presetName)) {
+                    Write-InfoLog "Launching quick launch preset [$number]: $presetName"
+                    Start-Scrcpy -executables $executables -config $config -InitialPresetName $presetName -IsRecording:$script:RecordingMode -IsQuickLaunch
+                    continue
+                }
+            }
+        }
 
         if ($menuResult.Key -eq 'Default' -and $menuResult.KeyInfo.VirtualKeyCode -eq 37) {
             Write-DebugLog "Left arrow pressed - jumping to device selection"
@@ -2312,8 +2432,9 @@ function Main {
         Write-DebugLog "User selected main menu option: $chosenOption"
 
 
-        if ($chosenOption.StartsWith("Quick Launch")) {
-            Start-Scrcpy -executables $executables -config $config -InitialPresetName $config.quickLaunchPreset -IsRecording:$script:RecordingMode -IsQuickLaunch
+        if ($chosenOption.StartsWith("[")) {
+            $presetName = ($chosenOption -split '] ')[1] -split ' - ' | Select-Object -First 1
+            Start-Scrcpy -executables $executables -config $config -InitialPresetName $presetName -IsRecording:$script:RecordingMode -IsQuickLaunch
         }
         elseif ($chosenOption.StartsWith("Last")) {
             Start-Scrcpy -executables $executables -config $config -InitialPresetName $config.lastUsedPreset -IsRecording:$script:RecordingMode 
