@@ -296,7 +296,7 @@ function Compare-ConfigChanges {
     param($oldConfig, $newConfig)
     $changes = @()
     
-    $properties = @('recordingPath', 'recordingFormat', 'lastUsedPreset', 'quickLaunchPreset', 'selectedDevice')
+    $properties = @('recordingPath', 'recordingFormat', 'lastUsedPreset', 'quickLaunchPreset', 'selectedDevice', 'showFooter')
     foreach ($prop in $properties) {
         if ($oldConfig.$prop -ne $newConfig.$prop) {
             $changes += "$prop changed from '$($oldConfig.$prop)' to '$($newConfig.$prop)'"
@@ -332,7 +332,8 @@ function Show-Menu {
         [int[]]$CategoryIndices = @(),
         [switch]$SkipCategoriesOnNavigate,
         [string[]]$Footer = @(),
-        [int[]]$AdditionalReturnKeyCodes = @()
+        [int[]]$AdditionalReturnKeyCodes = @(),
+        [bool]$ShowFooter = $true
     )
     $isScrollable = $Options.Count -gt $MaxMenuItems
 
@@ -391,8 +392,12 @@ function Show-Menu {
             Write-Host ""
         }
 
-        foreach ($line in $Footer) {
-            Write-Host $line -ForegroundColor Blue
+        if ($ShowFooter) {
+            foreach ($line in $Footer) {
+                Write-Host $line -ForegroundColor Blue
+            }
+        } else {
+            Write-Host "[F1] Show Footer" -ForegroundColor Gray
         }
 
         $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
@@ -401,13 +406,18 @@ function Show-Menu {
         $isCtrlPressed = ($key.ControlKeyState -band 0x0008) -or ($key.ControlKeyState -band 0x0004)
         
         switch ($key.VirtualKeyCode) {
-            27 { return @{ Key = 'Escape'; Index = -1; KeyInfo = $key } } # Escape
-            88 { return @{ Key = 'x'; Index = -1; KeyInfo = $key } } # 'x' key
-            13 { return @{ Key = 'Enter'; Index = $SelectedIndex; KeyInfo = $key } } # Enter
+            27 { return @{ Key = 'Escape'; Index = -1; KeyInfo = $key; ShowFooter = $ShowFooter } } # Escape
+            88 { return @{ Key = 'x'; Index = -1; KeyInfo = $key; ShowFooter = $ShowFooter } } # 'x' key
+            13 { return @{ Key = 'Enter'; Index = $SelectedIndex; KeyInfo = $key; ShowFooter = $ShowFooter } } # Enter
+            112 { # F1 - Toggle footer
+                $ShowFooter = -not $ShowFooter
+                Write-DebugLog "Footer visibility toggled: $ShowFooter"
+                continue
+            }
             38 {
                 if ($isCtrlPressed) {
                     # Ctrl+Up - preset reorder
-                    return @{ Key = 'CtrlUp'; Index = $SelectedIndex; KeyInfo = $key }
+                    return @{ Key = 'CtrlUp'; Index = $SelectedIndex; KeyInfo = $key; ShowFooter = $ShowFooter }
                 }
                 else { 
                     # Up Arrow
@@ -430,7 +440,7 @@ function Show-Menu {
             40 {
                 if ($isCtrlPressed) {
                     # Ctrl+Down - preset reorder
-                    return @{ Key = 'CtrlDown'; Index = $SelectedIndex; KeyInfo = $key }
+                    return @{ Key = 'CtrlDown'; Index = $SelectedIndex; KeyInfo = $key; ShowFooter = $ShowFooter }
                 }
                 else {
                     # Down Arrow
@@ -470,7 +480,7 @@ function Show-Menu {
             }
             default { # Other keys
                 if ($returnKeys -contains $key.VirtualKeyCode) {
-                    return @{ Key = 'Default'; Index = $SelectedIndex; KeyInfo = $key }
+                    return @{ Key = 'Default'; Index = $SelectedIndex; KeyInfo = $key; ShowFooter = $ShowFooter }
                 }
             }
         }
@@ -871,7 +881,8 @@ function Show-AdbOptionsMenu {
 function Show-DeviceSelection {
     param (
         [string]$adbPath,
-        [string]$currentDevice = ""
+        [string]$currentDevice = "",
+        [bool]$ShowFooter = $true
     )
     
     Write-DebugLog "Showing device selection menu"
@@ -900,16 +911,17 @@ function Show-DeviceSelection {
             $options += "Back"
         }
         
-        $menuResult  = Show-Menu -Title "Select a Device" -Options $options -Footer @("[ ↑/↓ ] Navigate", "[Enter] Select", "[ESC/X] Back")
+        $menuResult  = Show-Menu -Title "Select a Device" -Options $options -Footer @("[ ↑/↓ ] Navigate", "[Enter] Select", "[ESC/X] Back") -ShowFooter $ShowFooter
         $choiceIndex = $menuResult.Index
+        $ShowFooter = $menuResult.ShowFooter
 
         if ($choiceIndex -eq -1) {
             Write-DebugLog "User canceled device selection via ESC/X key"
-            return $null
+            return $null, $ShowFooter
         }
         elseif ($choiceIndex -eq ($options.Count - 1)) {
             Write-DebugLog "User selected 'Back' option in device selection menu"
-            return $null
+            return $null, $ShowFooter
         }
         elseif ($choiceIndex -eq 0) {
             Write-DebugLog "User refreshed device list"
@@ -953,7 +965,7 @@ function Show-DeviceSelection {
             }
             
             Write-InfoLog "User selected device: $selectedDevice"
-            return $selectedDevice
+            return $selectedDevice, $ShowFooter
         }
     }
 }
@@ -969,6 +981,7 @@ function Get-Config {
             lastUsedPreset    = ""
             quickLaunchPreset = ""
             selectedDevice    = ""
+            showFooter        = $true
             presets           = @(
                 [ordered]@{
                     name         = "Default"
@@ -1004,6 +1017,7 @@ function Get-Config {
             lastUsedPreset    = if ($loadedConfig.ContainsKey('lastUsedPreset')) { $loadedConfig.lastUsedPreset } else { "" }
             quickLaunchPreset = if ($loadedConfig.ContainsKey('quickLaunchPreset')) { $loadedConfig.quickLaunchPreset } else { "" }
             selectedDevice    = if ($loadedConfig.ContainsKey('selectedDevice')) { $loadedConfig.selectedDevice } else { "" }
+            showFooter        = if ($loadedConfig.ContainsKey('showFooter')) { [bool]$loadedConfig.showFooter } else { $true }
             presets           = if ($loadedConfig.ContainsKey('presets')) {
                 $loadedConfig.presets | ForEach-Object {
                     $newPreset = [ordered]@{}
@@ -1038,6 +1052,7 @@ function Get-Config {
                 lastUsedPreset    = ""
                 quickLaunchPreset = ""
                 selectedDevice    = ""
+                showFooter        = $true
                 presets           = @(
                     [ordered]@{
                         name         = "Default"
@@ -1095,6 +1110,7 @@ function Save-Config {
             lastUsedPreset    = $config.lastUsedPreset
             quickLaunchPreset = $config.quickLaunchPreset
             selectedDevice    = $deviceValue
+            showFooter        = $config.showFooter
             presets           = @()
         }
         
@@ -1167,8 +1183,9 @@ function Show-RecordingOptions {
             "Back"
         )
         
-        $menuResult = Show-Menu -Title "Recording Options" -Options $options -SelectedIndex $selectedIndex -Footer @("[ ↑/↓ ] Navigate", "[Enter] Select", "[ESC/X] Back")
+        $menuResult = Show-Menu -Title "Recording Options" -Options $options -SelectedIndex $selectedIndex -Footer @("[ ↑/↓ ] Navigate", "[Enter] Select", "[ESC/X] Back") -ShowFooter $config.showFooter
         $choiceIndex = $menuResult.Index
+        $config.showFooter = $menuResult.ShowFooter
         
         if ($choiceIndex -eq -1 -or $choiceIndex -eq ($options.Count - 1)) {
             return $config
@@ -1210,8 +1227,9 @@ function Show-RecordingOptions {
             2 {
                 $formatOptions = @("Always MKV", "Record in MKV then remux to MP4")
                 $currentFormatIndex = if ($config.recordingFormat -eq "RemuxToMP4") { 1 } else { 0 }
-                $formatMenuResult = Show-Menu -Title "Select Recording Format" -Options $formatOptions -SelectedIndex $currentFormatIndex -Footer @("[ ↑/↓ ] Navigate", "[Enter] Select", "[ESC/X] Back")
+                $formatMenuResult = Show-Menu -Title "Select Recording Format" -Options $formatOptions -SelectedIndex $currentFormatIndex -Footer @("[ ↑/↓ ] Navigate", "[Enter] Select", "[ESC/X] Back") -ShowFooter $config.showFooter
                 $formatChoice = $formatMenuResult.Index
+                $config.showFooter = $formatMenuResult.ShowFooter
 
                 if ($formatChoice -eq -1) { continue }
                 
@@ -1625,18 +1643,22 @@ function Invoke-PresetManager {
             }
         }
         
-        $footer = @(
-            "[  ↑/↓   ] Navigate      | [Enter] Edit",
-            "[ Ctrl+↑ ] Move Up       | [ DEL ] Delete",
-            "[ Ctrl+↓ ] Move Down     | [  D  ] Duplicate",
-            "[ PageUp ] Scroll Up     | [  Q  ] Quick Launch",
-            "[ PageDn ] Scroll Down   | [  F  ] Favorite",
-            "[Home/End] Top/Bottom    | [ESC/X] Back"
-        )
+        $footer = @()
+        if ($config.showFooter) {
+            $footer += "[  ↑/↓   ] Navigate      | [Enter] Edit"
+            $footer += "[ Ctrl+↑ ] Move Up       | [ DEL ] Delete"
+            $footer += "[ Ctrl+↓ ] Move Down     | [ 1-9 ] Quick Launch"
+            $footer += "[ PageUp ] Scroll Up     | [  F  ] Favorite"
+            $footer += "[ PageDn ] Scroll Down   | [ESC/X] Back"
+            $footer += "[Home/End] Top/Bottom    | [ F1  ] Toggle Footer"
+        } else {
+            $footer += "[F1] Show Footer"
+        }
 
-        $menuResult    = Show-Menu -Title "Preset Manager" -Options $menuOptions -SelectedIndex $selectedIndex -CategoryIndices $categoryIndices -Footer $footer -AdditionalReturnKeyCodes @(46, 68, 70, 81)
+        $menuResult    = Show-Menu -Title "Preset Manager" -Options $menuOptions -SelectedIndex $selectedIndex -CategoryIndices $categoryIndices -Footer $footer -AdditionalReturnKeyCodes @(46, 68, 70) -ShowFooter $config.showFooter
         $selectedIndex = $menuResult.Index
         $key           = $menuResult.KeyInfo
+        $config.showFooter = $menuResult.ShowFooter
 
         switch ($menuResult.Key) {
             'Escape' { 
@@ -1878,7 +1900,9 @@ function Start-Scrcpy {
         # 1. Check if device is selected
         if ([string]::IsNullOrWhiteSpace($config.selectedDevice)) {
             Write-DebugLog "No device selected, showing device selection immediately"
-            $selectedDevice = Show-DeviceSelection -adbPath $executables.AdbPath
+            $deviceResult = Show-DeviceSelection -adbPath $executables.AdbPath -ShowFooter $config.showFooter
+            $selectedDevice = $deviceResult[0]
+            $config.showFooter = $deviceResult[1]
             if ($null -eq $selectedDevice) { 
                 $config.selectedDevice = ""
                 Save-Config $config
@@ -1944,8 +1968,9 @@ function Start-Scrcpy {
             
             while ($true) {
                 $menuOptions  = @("Search Presets...") + $presetOptions + @("Back")
-                $menuResult   = Show-Menu -Title "Select a Preset to Launch" -Options $menuOptions -CategoryIndices $categoryIndices -SkipCategoriesOnNavigate -Footer @("[ ↑/↓ ] Navigate", "[Enter] Select", "[ESC/X] Back")
+                $menuResult   = Show-Menu -Title "Select a Preset to Launch" -Options $menuOptions -CategoryIndices $categoryIndices -SkipCategoriesOnNavigate -Footer @("[ ↑/↓ ] Navigate", "[Enter] Select", "[ESC/X] Back") -ShowFooter $config.showFooter
                 $presetChoice = $menuResult.Index
+                $config.showFooter = $menuResult.ShowFooter
 
                 if ($presetChoice -eq -1 -or $presetChoice -eq ($menuOptions.Count - 1)) { 
                     Write-InfoLog "User canceled preset selection"
@@ -2250,14 +2275,24 @@ function Main {
         }
         $options += "Start scrcpy", "Manage Presets", "Device: $deviceDisplayName$recordingIndicator", "Recording Options", "Exit"
 
-        $menuResult = Show-Menu -Title "scrcpy Automation v$ScriptVersion" -Options $options -SelectedIndex $selectedIndex -Footer @(
-            "[ ↑/↓ ] Navigate     | [Enter] Select",
-            "[  ←  ] Device Menu  | [  →  ] Toggle Recording", 
-            "[ESC/X] Exit") -AdditionalReturnKeyCodes @(39, 37)
+        $footer = @()
+        if ($config.showFooter) {
+            $footer += "[ ↑/↓ ] Navigate     | [Enter] Select"
+            $footer += "[ 1-9 ] Quick Launch | [  ←  ] Device Menu"
+            $footer += "[  →  ] Toggle Record| [F1] Toggle Footer"
+            $footer += "[ESC/X] Exit"
+        } else {
+            $footer += "[F1] Show Footer"
+        }
+
+        $menuResult = Show-Menu -Title "scrcpy Automation v$ScriptVersion" -Options $options -SelectedIndex $selectedIndex -Footer $footer -AdditionalReturnKeyCodes @(39, 37) -ShowFooter $config.showFooter
+        $config.showFooter = $menuResult.ShowFooter
 
         if ($menuResult.Key -eq 'Default' -and $menuResult.KeyInfo.VirtualKeyCode -eq 37) {
             Write-DebugLog "Left arrow pressed - jumping to device selection"
-            $selectedDevice = Show-DeviceSelection -adbPath $executables.AdbPath -currentDevice $config.selectedDevice
+            $deviceResult = Show-DeviceSelection -adbPath $executables.AdbPath -currentDevice $config.selectedDevice -ShowFooter $config.showFooter
+            $selectedDevice = $deviceResult[0]
+            $config.showFooter = $deviceResult[1]
             if ($null -ne $selectedDevice) {
                 $config.selectedDevice = $selectedDevice
                 Save-Config $config
@@ -2290,7 +2325,9 @@ function Main {
             $config = Invoke-PresetManager -config $config
         }
         elseif ($chosenOption.StartsWith("Device")) {
-            $selectedDevice = Show-DeviceSelection -adbPath $executables.AdbPath -currentDevice $config.selectedDevice
+            $deviceResult = Show-DeviceSelection -adbPath $executables.AdbPath -currentDevice $config.selectedDevice -ShowFooter $config.showFooter
+            $selectedDevice = $deviceResult[0]
+            $config.showFooter = $deviceResult[1]
             if ($null -ne $selectedDevice) {
                 $config.selectedDevice = $selectedDevice
                 Save-Config $config
