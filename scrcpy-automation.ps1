@@ -296,7 +296,7 @@ function Compare-ConfigChanges {
     param($oldConfig, $newConfig)
     $changes = @()
     
-    $properties = @('recordingPath', 'recordingFormat', 'lastUsedPreset', 'quickLaunchPresets', 'selectedDevice', 'showFooter')
+    $properties = @('recordingPath', 'recordingFormat', 'lastUsedPreset', 'quickLaunchPresets', 'selectedDevice')
     foreach ($prop in $properties) {
         if ($prop -eq 'quickLaunchPresets') {
             if ($oldConfig.$prop.Count -ne $newConfig.$prop.Count) {
@@ -996,7 +996,6 @@ function Get-Config {
             lastUsedPreset    = ""
             quickLaunchPresets = [ordered]@{}
             selectedDevice    = ""
-            showFooter        = $true
             presets           = @(
                 [ordered]@{
                     name         = "Default"
@@ -1040,7 +1039,7 @@ function Get-Config {
                 $quickLaunchPresets
             } else { [ordered]@{} }
             selectedDevice    = if ($loadedConfig.ContainsKey('selectedDevice')) { $loadedConfig.selectedDevice } else { "" }
-            showFooter        = if ($loadedConfig.ContainsKey('showFooter')) { [bool]$loadedConfig.showFooter } else { $true }
+            showFooter        = $true
             presets           = if ($loadedConfig.ContainsKey('presets')) {
                 $loadedConfig.presets | ForEach-Object {
                     $newPreset = [ordered]@{}
@@ -1133,7 +1132,6 @@ function Save-Config {
             lastUsedPreset    = $config.lastUsedPreset
             quickLaunchPresets = $config.quickLaunchPresets
             selectedDevice    = $deviceValue
-            showFooter        = $config.showFooter
             presets           = @()
         }
         
