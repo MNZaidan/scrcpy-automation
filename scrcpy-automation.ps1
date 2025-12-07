@@ -1667,10 +1667,10 @@ function Invoke-PresetManager {
         $footer = @(
             "[  ↑/↓   ] Navigate      | [Enter] Edit",
             "[ Ctrl+↑ ] Move Up       | [ DEL ] Delete",
-            "[ Ctrl+↓ ] Move Down     | [ 1-9 ] Quick Launch",
-            "[ PageUp ] Scroll Up     | [  F  ] Favorite",
-            "[ PageDn ] Scroll Down   | [Home/End] Top/Bottom",
-            "[ESC/X] Back"
+            "[ Ctrl+↓ ] Move Down     | [ 1-9 ] Quick Launch [1-9]",
+            "[ PageUp ] Scroll Up     | [  F  ] Favorite ★",
+            "[ PageDn ] Scroll Down   | [ESC/X] Back",
+            "[Home/End] Top/Bottom"
         )
 
         $menuResult    = Show-Menu -Title "Preset Manager" -Options $menuOptions -SelectedIndex $selectedIndex -CategoryIndices $categoryIndices -Footer $footer -AdditionalReturnKeyCodes @(46, 68, 70)
