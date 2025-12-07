@@ -706,6 +706,36 @@ function Get-DeviceDisplayName {
         return "$deviceSerial (disconnected)" 
     }
 }
+function Get-DeviceBatteryLevel {
+    param (
+        [string]$adbPath,
+        [string]$deviceSerial
+    )
+    
+    try {
+        $output = & $adbPath -s $deviceSerial shell "dumpsys battery" 2>&1
+        
+        if ($LASTEXITCODE -ne 0) {
+            Write-DebugLog "ADB command failed with exit code: $LASTEXITCODE"
+            return $null
+        }
+        
+        $outputString = if ($output -is [array]) { $output -join "`n" } else { $output.ToString() }
+        
+        if ($outputString -match 'level:\s*(\d+)') {
+            $batteryLevel = [int]$matches[1]
+            Write-DebugLog "device battery level: $batteryLevel%"
+            return $batteryLevel
+        }
+        
+        Write-DebugLog "No battery level found in output"
+        return $null
+    }
+    catch {
+        Write-DebugLog "Exception getting battery level: $($_.Exception.Message)"
+        return $null
+    }
+}
 
 function Invoke-AdbTcpip {
     param ([string]$adbPath)
@@ -2314,7 +2344,19 @@ function Main {
             "No device selected"
         }
         
-        $recordingIndicator = if ($script:RecordingMode) { "🔴" } else { "" }
+        $recordingIndicator = if ($script:RecordingMode) { " 🔴" } else { "" }
+        if (-not [string]::IsNullOrEmpty($config.selectedDevice)) {
+            $deviceList = Get-AdbDeviceList -adbPath $executables.AdbPath -MaxRetries 1
+            $device = $deviceList | Where-Object { $_.Serial -eq $config.selectedDevice -and $_.State -eq 'device' } | Select-Object -First 1
+            
+            if ($device) {
+                $batteryLevel = Get-DeviceBatteryLevel -adbPath $executables.AdbPath -deviceSerial $config.selectedDevice
+                if ($null -ne $batteryLevel -and $batteryLevel -lt 30) {
+                    $deviceDisplayName += " Battery: ${batteryLevel}%"
+                }
+            }
+        }
+
 
         $presetIndices = @()
         $presetDisplayNames = @()
