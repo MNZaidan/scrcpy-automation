@@ -2326,8 +2326,8 @@ function Main {
             $presetDisplayNames += $config.lastUsedPreset
         }
         
-        # Add spacer after last used preset
-        if ($null -ne $lastUsedIndex) {
+        # Add spacer after preset section (either quick launch or last used)
+        if ($presetIndices.Count -gt 0) {
             $options += ""
         }
         
@@ -2335,9 +2335,9 @@ function Main {
         $options += "Start scrcpy", "Manage Presets", "Device: $deviceDisplayName$recordingIndicator", "Recording Options", "Exit"
         
         $spacerIndices = @()
-        if ($null -ne $lastUsedIndex) {
-            # Spacer after last used preset
-            $spacerIndices += $lastUsedIndex + 1
+        if ($presetIndices.Count -gt 0) {
+            # Spacer after preset section
+            $spacerIndices += $presetIndices[-1] + 1
         }
         
         if ($firstTimeMainMenu) {
