@@ -2293,6 +2293,8 @@ function Main {
 
     # Interactive Menu loop
     $selectedIndex = 0
+    $firstTimeMainMenu = $true
+    
     while ($true) {
         $options = @()
         $deviceDisplayName = if (-not [string]::IsNullOrEmpty($config.selectedDevice)) {
@@ -2303,7 +2305,6 @@ function Main {
         
         $recordingIndicator = if ($script:RecordingMode) { "🔴" } else { "" }
 
-        $hasQuickLaunch = $false
         $presetIndices = @()
         $presetDisplayNames = @()
         
@@ -2311,7 +2312,6 @@ function Main {
         for ($i = 1; $i -le 9; $i++) {
             $presetName = $config.quickLaunchPresets[$i.ToString()]
             if (-not [string]::IsNullOrWhiteSpace($presetName)) {
-                $hasQuickLaunch = $true
                 $options += "[$i] $presetName"
                 $presetIndices += $options.Count - 1
                 $presetDisplayNames += $presetName
@@ -2338,6 +2338,14 @@ function Main {
         if ($null -ne $lastUsedIndex) {
             # Spacer after last used preset
             $spacerIndices += $lastUsedIndex + 1
+        }
+        
+        if ($firstTimeMainMenu) {
+            $startScrcpyIndex = $options.IndexOf("Start scrcpy")
+            if ($startScrcpyIndex -ge 0) {
+                $selectedIndex = $startScrcpyIndex
+            }
+            $firstTimeMainMenu = $false
         }
         
         $footer = @(
