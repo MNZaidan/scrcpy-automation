@@ -1692,6 +1692,14 @@ function Invoke-PresetManager {
                         }
                         
                         $currentPresetInSlot = $config.quickLaunchPresets[$number.ToString()]
+                        if ($currentPresetInSlot -eq $selectedPreset.name) {
+                            $config.quickLaunchPresets[$number.ToString()] = ""
+                            Write-InfoLog "Removed '$($selectedPreset.name)' from Quick Launch slot $number" -ForegroundColor Yellow
+                            Save-Config $config
+                            Start-Sleep -Seconds 1
+                            continue
+                        }
+
                         if (-not [string]::IsNullOrWhiteSpace($currentPresetInSlot) -and $currentPresetInSlot -ne $selectedPreset.name) {
                             Write-DebugLog "Quick Launch slot $number is already assigned to '$currentPresetInSlot'"
                             $confirm = Read-Input -Prompt "Slot $number is already assigned to '$currentPresetInSlot'. Replace it? (y/n)" -DefaultValue "y" -HideDefaultValue
@@ -1705,15 +1713,8 @@ function Invoke-PresetManager {
                                 $config.quickLaunchPresets[$slot.ToString()] = ""
                             }
                         }
-                        
-                        if ($config.quickLaunchPresets[$number.ToString()] -eq $selectedPreset.name) {
-                            $config.quickLaunchPresets[$number.ToString()] = ""
-                            Write-InfoLog "Removed preset from Quick Launch slot $number" -ForegroundColor Yellow
-                        } else {
-                            $config.quickLaunchPresets[$number.ToString()] = $selectedPreset.name
-                            Write-InfoLog "Assigned '$($selectedPreset.name)' to Quick Launch slot $number" -ForegroundColor Green
-                        }
-                        
+                        $config.quickLaunchPresets[$number.ToString()] = $selectedPreset.name
+                        Write-InfoLog "Assigned '$($selectedPreset.name)' to Quick Launch slot $number" -ForegroundColor Green                        
                         Save-Config $config
                         Start-Sleep -Seconds 1
                     }
