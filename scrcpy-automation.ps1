@@ -1286,18 +1286,28 @@ function Get-FormattedPresetList {
         if ($null -ne $description -and $description.Length -gt 80) {
             $description = $description.Substring(0, 80) + "..."
         }
-        $name = $_.name.PadRight($maxNameLength)
-        $FavoriteStar = if ($_.PSObject.Properties.Name -contains 'favorite' -and $_.favorite) { '★ ' } else { '  ' }
         
         $quickLaunchNumber = ""
         foreach ($slot in 1..9) {
             if ($Config.quickLaunchPresets[$slot.ToString()] -eq $_.name) {
-                $quickLaunchNumber = "[$slot] "
+                $quickLaunchNumber = "$slot"
                 break
             }
         }
         
-        "$quickLaunchNumber$FavoriteStar$name - $description"
+        $FavoriteStar = if ($_.PSObject.Properties.Name -contains 'favorite' -and $_.favorite) { '★' } else { ' ' }
+        
+        if ($quickLaunchNumber -ne "") {
+            # [1] ★
+            $prefix = "[${quickLaunchNumber}] ${FavoriteStar}"
+        } else {
+            #     ★
+            $prefix = "    ${FavoriteStar}"
+        }
+        
+        $paddedName = $_.name.PadRight($maxNameLength)
+        
+        "${prefix} ${paddedName} - ${description}"
     }
     if ($null -eq $Config.presets -or $Config.presets.Count -eq 0) {
         return @()
