@@ -128,6 +128,7 @@ $DeviceListCacheTTL = 30  # 30 seconds for device list cache
 $DeviceInfoCacheTTL = 60  # 60 seconds for device info cache
 $BatteryCacheTTL = 300    # 5 minutes for battery cache
 $MaxMenuItems = 19 # The maximum number of items to display in menus before scrolling
+$showBatteryThreshold = 100  # Battery percentage threshold to show in main menu
 $DisableClearHost = $NoClear
 $PresetProperties = @(
     'name',
@@ -2460,7 +2461,7 @@ function Main {
             $deviceInfo = Get-DeviceInfo -adbPath $executables.AdbPath -deviceSerial $config.selectedDevice
             $displayText = $deviceInfo.DisplayName
 
-            if ($null -ne $deviceInfo.BatteryLevel -and $deviceInfo.BatteryLevel -lt 50) {
+            if ($null -ne $deviceInfo.BatteryLevel -and $deviceInfo.BatteryLevel -lt $showBatteryThreshold) {
                 $displayText += " Battery: $($deviceInfo.BatteryLevel)%"
             }
 
