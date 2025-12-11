@@ -669,11 +669,17 @@ function Get-AdbDeviceList {
             $script:DeviceCache.DeviceList = $deviceList
             $script:DeviceCache.LastUpdated = Get-Date
             
-            # Clear stale device info from cache
+            # Clear stale device info from cache and remove devices no longer in the list
             $staleSerials = @()
             foreach ($key in $script:DeviceCache.SelectedDeviceInfo.Keys) {
                 $info = $script:DeviceCache.SelectedDeviceInfo[$key]
-                if ($info.LastUpdated -and ($currentTime - $info.LastUpdated).TotalSeconds -gt $DeviceInfoCacheTTL) {
+                $stillConnected = $deviceList | Where-Object { $_.Serial -eq $key } | Select-Object -First 1
+
+                if (-not $stillConnected) {
+                    $staleSerials += $key
+                    Write-DebugLog "Device $key is no longer connected, removing from cache"
+                }
+                elseif ($info.LastUpdated -and ($currentTime - $info.LastUpdated).TotalSeconds -gt $DeviceInfoCacheTTL) {
                     $staleSerials += $key
                 }
             }
@@ -822,6 +828,27 @@ function Get-DeviceBatteryLevel {
     catch {
         Write-DebugLog "Exception getting battery level: $($_.Exception.Message)"
         return $null
+    }
+}
+function Clear-DeviceCaches {
+    param(
+        [string]$SpecificDevice = $null
+    )
+    
+    if ([string]::IsNullOrEmpty($SpecificDevice)) {
+        Write-DebugLog "Clearing all device caches"
+        $script:DeviceCache.DeviceList = @()
+        $script:DeviceCache.SelectedDeviceInfo = @{}
+        $script:DeviceCache.LastUpdated = $null
+    }
+    else {
+        Write-DebugLog "Clearing cache for device: $SpecificDevice"
+        if ($script:DeviceCache.SelectedDeviceInfo.ContainsKey($SpecificDevice)) {
+            $script:DeviceCache.SelectedDeviceInfo.Remove($SpecificDevice)
+        }
+        
+        $script:DeviceCache.DeviceList = $script:DeviceCache.DeviceList | 
+            Where-Object { $_.Serial -ne $SpecificDevice }
     }
 }
 
@@ -977,6 +1004,7 @@ function Show-AdbOptionsMenu {
             "adb pair",
             "adb tcpip"
             "adb kill-server",
+            "Clear Device Caches"
             "Back"
         )
         $menuResult = Show-Menu -Title "ADB Connection Options" -Options $options -Footer @("[ ↑/↓ ] Navigate", "[Enter] Select", "[ESC/X] Back")
@@ -992,6 +1020,11 @@ function Show-AdbOptionsMenu {
             2 { Invoke-AdbPair -adbPath $adbPath }
             3 { Invoke-AdbTcpip -adbPath $adbPath }
             4 { Invoke-AdbKillServer -adbPath $adbPath }
+            5 { 
+                Clear-DeviceCaches
+                Write-InfoLog "Device caches cleared." -ForegroundColor Green
+                Wait-Enter
+            }
         }
     }
 }
@@ -1012,6 +1045,7 @@ function Show-DeviceSelection {
         
         if ($null -eq $deviceList -or $deviceList.Count -eq 0) {
             Write-WarnLog "No ADB devices found. Please connect a device and ensure USB debugging is enabled."
+            Clear-DeviceCaches
             Start-Sleep -Seconds 1
             $options += "Back"
         }
@@ -1041,9 +1075,8 @@ function Show-DeviceSelection {
         }
         elseif ($choiceIndex -eq 0) {
             Write-DebugLog "User selected 'Refresh Device Info & List'"
-            $script:DeviceCache.DeviceList = @()
-            $script:DeviceCache.SelectedDeviceInfo = @{}
-            $script:DeviceCache.LastUpdated = $null
+            Clear-DeviceCaches
+            $deviceList = Get-AdbDeviceList -adbPath $adbPath -ForceRefresh:$true
             continue
         }        
         elseif ($choiceIndex -eq 1) {
@@ -2089,9 +2122,7 @@ function Start-Scrcpy {
             $device = $deviceList | Where-Object { $_.Serial -eq $config.selectedDevice } | Select-Object -First 1
 
             if (-not $device -or $device.State -ne 'device') {
-                if ($script:DeviceCache.SelectedDeviceInfo.ContainsKey($config.selectedDevice)) {
-                    $script:DeviceCache.SelectedDeviceInfo.Remove($config.selectedDevice)
-                }
+                Clear-DeviceCaches -SpecificDevice $config.selectedDevice
                 
                 Write-ErrorLog "Selected device '$($config.selectedDevice)' is not connected or not in device state."
 
