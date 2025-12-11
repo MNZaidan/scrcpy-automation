@@ -117,10 +117,16 @@ param (
 #endregion
 
 #region Global Variables and Defaults
-$global:LastAdbOperation = $null
-$script:BatteryCache = @{}
+$script:DeviceCache = @{
+    DeviceList = @()
+    LastUpdated = $null
+    SelectedDeviceInfo = @{}
+}
 $OutputEncoding = [System.Text.Encoding]::UTF8
 $ScriptVersion = "2.27"
+$DeviceListCacheTTL = 30  # 30 seconds for device list cache
+$DeviceInfoCacheTTL = 60  # 60 seconds for device info cache
+$BatteryCacheTTL = 300    # 5 minutes for battery cache
 $MaxMenuItems = 19 # The maximum number of items to display in menus before scrolling
 $DisableClearHost = $NoClear
 $PresetProperties = @(
@@ -610,15 +616,24 @@ function Wait-Enter {
 function Get-AdbDeviceList {
     param (
         [string]$adbPath,
+        [switch]$ForceRefresh,
         [int]$MaxRetries = 5
     )
+    
+    $currentTime = Get-Date
+    if (-not $ForceRefresh -and $script:DeviceCache.DeviceList.Count -gt 0 -and 
+        $script:DeviceCache.LastUpdated -and 
+        ($currentTime - $script:DeviceCache.LastUpdated).TotalSeconds -lt $DeviceListCacheTTL) {
+        Write-DebugLog "Using cached device list (cached $([math]::Round(($currentTime - $script:DeviceCache.LastUpdated).TotalSeconds, 1))s ago)"
+        return $script:DeviceCache.DeviceList
+    }
     
     $deviceList = @()
     $retryCount = 0
     
     while ($retryCount -le $MaxRetries) {
         try {
-            $adbOutput = Invoke-SafeCommand -Command { & $adbPath devices -l } -ErrorMessage "Failed to run adb devices command"
+            $adbOutput = Invoke-SafeCommand -Command { & $adbPath devices -l } -ErrorMessage "Failed to run adb devices command" -ContinueOnError
             
             $adbOutput | Where-Object { $_ -is [string] } | Select-Object -Skip 1 | ForEach-Object {
                 $line = $_.Trim()
@@ -631,15 +646,43 @@ function Get-AdbDeviceList {
                         
                         if ($modelMatch) {
                             $model = $modelMatch.Matches.Groups[1].Value
-                            $deviceList += [pscustomobject]@{ Serial = $serial; Model = $model; State = $state }
+                            $deviceList += [pscustomobject]@{ 
+                                Serial = $serial
+                                Model = $model
+                                State = $state
+                                LastSeen = Get-Date
+                            }
                         }
                         else {
-                            $deviceList += [pscustomobject]@{ Serial = $serial; Model = ""; State = $state }
+                            $deviceList += [pscustomobject]@{ 
+                                Serial = $serial
+                                Model = ""
+                                State = $state
+                                LastSeen = Get-Date
+                            }
                         }
                     }
                 }
             }
+            
+            # Update cache
+            $script:DeviceCache.DeviceList = $deviceList
+            $script:DeviceCache.LastUpdated = Get-Date
+            
+            # Clear stale device info from cache
+            $staleSerials = @()
+            foreach ($key in $script:DeviceCache.SelectedDeviceInfo.Keys) {
+                $info = $script:DeviceCache.SelectedDeviceInfo[$key]
+                if ($info.LastUpdated -and ($currentTime - $info.LastUpdated).TotalSeconds -gt $DeviceInfoCacheTTL) {
+                    $staleSerials += $key
+                }
+            }
+            foreach ($serial in $staleSerials) {
+                $script:DeviceCache.SelectedDeviceInfo.Remove($serial)
+            }
+            
             if ($deviceList.Count -gt 0 -or $retryCount -eq $MaxRetries) {
+                Write-DebugLog "Refreshed device list, found $($deviceList.Count) devices"
                 break
             }
         }
@@ -656,56 +699,77 @@ function Get-AdbDeviceList {
     
     return $deviceList
 }
-function Get-DeviceDisplayName {
+function Get-DeviceInfo {
     param (
         [string]$adbPath,
         [string]$deviceSerial,
-        [int]$MaxRetries = 1
+        [switch]$ForceRefresh
     )
     
     $deviceSerial = $deviceSerial.Trim()
-    
-    if ([string]::IsNullOrWhiteSpace($deviceSerial)) { 
-        Write-DebugLog "No device selected"
-        return "No device selected" 
+    if ([string]::IsNullOrWhiteSpace($deviceSerial)) {
+        return @{ DisplayName = "No device selected"; BatteryLevel = $null; State = "unknown" }
     }
     
-    Write-DebugLog "Checking status for selected device: '$deviceSerial'"
+    $currentTime = Get-Date
     
-    $device = $null
-    $retryCount = 0
+    # Check if we need to refresh
+    $needsRefresh = $ForceRefresh
+    $cachedInfo = $null
     
-    while ($retryCount -lt $MaxRetries -and $null -eq $device) {
-        $deviceList = Get-AdbDeviceList -adbPath $adbPath -MaxRetries 0
+    if ($script:DeviceCache.SelectedDeviceInfo.ContainsKey($deviceSerial)) {
+        $cachedInfo = $script:DeviceCache.SelectedDeviceInfo[$deviceSerial]
+        if ($cachedInfo.LastUpdated -and ($currentTime - $cachedInfo.LastUpdated).TotalSeconds -gt $DeviceInfoCacheTTL) {
+            $needsRefresh = $true
+        }
+    } else {
+        $needsRefresh = $true
+        $cachedInfo = @{}
+    }
+    
+    if ($needsRefresh) {
+        Write-DebugLog "Refreshing device info for: $deviceSerial"
+        
+        $deviceList = Get-AdbDeviceList -adbPath $adbPath -ForceRefresh:$ForceRefresh
+        
         $device = $deviceList | Where-Object { 
-            $_.Serial.Trim() -eq $deviceSerial -and $_.State -eq 'device'
+            $_.Serial.Trim() -eq $deviceSerial
         } | Select-Object -First 1
         
-        if ($null -eq $device) {
-            $retryCount++
-            Write-DebugLog "Retrying lookup for device '$deviceSerial' to reach 'device' state (attempt $retryCount/$MaxRetries)"
-            Start-Sleep -Milliseconds 500
+        if ($device) {
+            $displayName = if ($device.Model) { 
+                "$($device.Model) ($($device.Serial))" 
+            } else { 
+                $device.Serial 
+            }
+            
+            if ($device.State -ne 'device') {
+                $displayName = "$displayName [$($device.State)]"
+            }
+            
+            $cachedInfo.DisplayName = $displayName
+            $cachedInfo.State = $device.State
+            $cachedInfo.LastUpdated = $currentTime
+            
+            $batteryLevel = Get-DeviceBatteryLevel -adbPath $adbPath -deviceSerial $deviceSerial -ForceRefresh:$ForceRefresh
+            $cachedInfo.BatteryLevel = $batteryLevel
+            
+            Write-DebugLog "Updated device info cache for $deviceSerial"
+        } else {
+            $cachedInfo.DisplayName = "$deviceSerial (disconnected)"
+            $cachedInfo.State = "disconnected"
+            $cachedInfo.BatteryLevel = $null
+            $cachedInfo.LastUpdated = $currentTime
+
+            Write-DebugLog "Device $deviceSerial not found in device list"
         }
+        
+        $script:DeviceCache.SelectedDeviceInfo[$deviceSerial] = $cachedInfo
+    } else {
+        Write-DebugLog "Using cached device info for $deviceSerial"
     }
     
-    if ($device) {
-        Write-DebugLog "Selected device found with state: $($device.State)"
-        if ($device.Model) {
-            return "$($device.Model) ($($device.Serial))"
-        }
-        else {
-            return "$($device.Serial)"
-        }
-    }
-    else { 
-        $anyStateDevice = (Get-AdbDeviceList -adbPath $adbPath -MaxRetries 0) | Where-Object { $_.Serial.Trim() -eq $deviceSerial } | Select-Object -First 1
-        if ($anyStateDevice) {
-            Write-DebugLog "Selected device found but in state: $($anyStateDevice.State)"
-            return "$deviceSerial [$($anyStateDevice.State)]"
-        }
-        Write-DebugLog "Selected device not found"
-        return "$deviceSerial (disconnected)" 
-    }
+    return $script:DeviceCache.SelectedDeviceInfo[$deviceSerial]
 }
 function Get-DeviceBatteryLevel {
     param (
@@ -714,33 +778,23 @@ function Get-DeviceBatteryLevel {
         [switch]$ForceRefresh
     )
     
+    $deviceSerial = $deviceSerial.Trim()
+    if ([string]::IsNullOrWhiteSpace($deviceSerial)) {
+        return $null
+    }
+    
+    $currentTime = Get-Date
+    if (-not $ForceRefresh -and $script:DeviceCache.SelectedDeviceInfo.ContainsKey($deviceSerial)) {
+        $cachedInfo = $script:DeviceCache.SelectedDeviceInfo[$deviceSerial]
+        if ($null -ne $cachedInfo.BatteryLevel -and 
+            $cachedInfo.BatteryLastUpdated -and 
+            (($currentTime - $cachedInfo.BatteryLastUpdated).TotalSeconds -lt $BatteryCacheTTL)) {
+            Write-DebugLog "Using cached battery level for $deviceSerial : $($cachedInfo.BatteryLevel)% (cached $([math]::Round(($currentTime - $cachedInfo.BatteryLastUpdated).TotalSeconds, 1))s ago)"
+            return $cachedInfo.BatteryLevel
+        }
+    }
+    
     try {
-        $deviceList = Get-AdbDeviceList -adbPath $adbPath -MaxRetries 0
-        $device = $deviceList | Where-Object { 
-            $_.Serial.Trim() -eq $deviceSerial -and $_.State -eq 'device'
-        } | Select-Object -First 1
-        
-        if (-not $device) {
-            if ($script:BatteryCache.ContainsKey($deviceSerial)) {
-                $script:BatteryCache.Remove($deviceSerial)
-            }
-            Write-DebugLog "Device $deviceSerial not connected or not in 'device' state"
-            return $null
-        }
-        
-        if (-not $ForceRefresh -and $script:BatteryCache.ContainsKey($deviceSerial)) {
-            $cacheEntry = $script:BatteryCache[$deviceSerial]
-            $cacheTime = $cacheEntry.Time
-            $batteryLevel = $cacheEntry.Level
-            
-            $timeSinceLastCheck = (Get-Date) - $cacheTime
-            if ($timeSinceLastCheck.TotalMinutes -lt 5) {
-                Write-DebugLog "Using cached battery level for $deviceSerial : ${batteryLevel}% (cache age: $([math]::Round($timeSinceLastCheck.TotalSeconds, 1))s)"
-                return $batteryLevel
-            }
-        }
-        
-        Write-DebugLog "Fetching fresh battery level for device: $deviceSerial"
         $output = & $adbPath -s $deviceSerial shell "dumpsys battery" 2>&1
         
         if ($LASTEXITCODE -ne 0) {
@@ -754,10 +808,11 @@ function Get-DeviceBatteryLevel {
             $batteryLevel = [int]$matches[1]
             Write-DebugLog "Device battery level: $batteryLevel%"
             
-            $script:BatteryCache[$deviceSerial] = @{
-                Level = $batteryLevel
-                Time = Get-Date
+            if (-not $script:DeviceCache.SelectedDeviceInfo.ContainsKey($deviceSerial)) {
+                $script:DeviceCache.SelectedDeviceInfo[$deviceSerial] = @{}
             }
+            $script:DeviceCache.SelectedDeviceInfo[$deviceSerial].BatteryLevel = $batteryLevel
+            $script:DeviceCache.SelectedDeviceInfo[$deviceSerial].BatteryLastUpdated = $currentTime
             
             return $batteryLevel
         }
@@ -768,14 +823,6 @@ function Get-DeviceBatteryLevel {
     catch {
         Write-DebugLog "Exception getting battery level: $($_.Exception.Message)"
         return $null
-    }
-}
-function Clear-BatteryCache {
-    param([string]$deviceSerial)
-    
-    if ($script:BatteryCache.ContainsKey($deviceSerial)) {
-        $script:BatteryCache.Remove($deviceSerial)
-        Write-DebugLog "Cleared battery cache for device: $deviceSerial"
     }
 }
 
@@ -958,15 +1005,16 @@ function Show-AdbOptionsMenu {
 function Show-DeviceSelection {
     param (
         [string]$adbPath,
-        [string]$currentDevice = ""
+        [string]$currentDevice = "",
+        [switch]$ForceRefresh
     )
     
-    Write-DebugLog "Showing device selection menu"
+    Write-DebugLog "Showing device selection menu (ForceRefresh: $ForceRefresh)"
     
     while ($true) {
-        $deviceList = Get-AdbDeviceList -adbPath $adbPath -MaxRetries 3
+        $deviceList = Get-AdbDeviceList -adbPath $adbPath -ForceRefresh:$true
         
-        $options = @("Refresh Device List", "ADB Options")
+        $options = @("Refresh Device Info & List", "ADB Options")
         
         if ($null -eq $deviceList -or $deviceList.Count -eq 0) {
             Write-WarnLog "No ADB devices found. Please connect a device and ensure USB debugging is enabled."
@@ -974,12 +1022,11 @@ function Show-DeviceSelection {
             $options += "Back"
         }
         else {
-            $deviceList | ForEach-Object {
-                $displayText = if ($_.Model) { "$($_.Model) ($($_.Serial))" } else { $_.Serial }
-                if ($_.State -ne 'device') {
-                    $displayText = "$displayText [$($_.State)]"
-                }
-                if ($_.Serial -eq $currentDevice) {
+            foreach ($device in $deviceList) {
+                $deviceInfo = Get-DeviceInfo -adbPath $adbPath -deviceSerial $device.Serial -ForceRefresh:$true
+                $displayText = $deviceInfo.DisplayName
+                
+                if ($device.Serial -eq $currentDevice) {
                     $displayText = "[SELECTED] $displayText"
                 }
                 $options += $displayText
@@ -999,7 +1046,10 @@ function Show-DeviceSelection {
             return $null
         }
         elseif ($choiceIndex -eq 0) {
-            Write-DebugLog "User refreshed device list"
+            Write-DebugLog "User selected 'Refresh Device Info & List'"
+            $script:DeviceCache.DeviceList = @()
+            $script:DeviceCache.SelectedDeviceInfo = @{}
+            $script:DeviceCache.LastUpdated = $null
             continue
         }        
         elseif ($choiceIndex -eq 1) {
@@ -1011,10 +1061,8 @@ function Show-DeviceSelection {
             $selectedDeviceIndex = $choiceIndex - 2
             $selectedDevice = $deviceList[$selectedDeviceIndex].Serial.Trim()
             Write-DebugLog "User selected device: $selectedDevice (Index: $selectedDeviceIndex)"
-
-            if ($selectedDevice -ne $currentDevice) {
-                Clear-BatteryCache -deviceSerial $selectedDevice
-            }
+            
+            Get-DeviceInfo -adbPath $adbPath -deviceSerial $selectedDevice -ForceRefresh:$true
             
             if ($deviceList[$selectedDeviceIndex].State -ne 'device') {
                 Write-WarnLog "Device is in $($deviceList[$selectedDeviceIndex].State) state."
@@ -1026,7 +1074,7 @@ function Show-DeviceSelection {
                 
                 while ($attempts -lt $maxAttempts -and -not $deviceReady) {
                     Start-Sleep -Seconds 1
-                    $refreshedList = Get-AdbDeviceList -adbPath $adbPath -MaxRetries 0
+                    $refreshedList = Get-AdbDeviceList -adbPath $adbPath -ForceRefresh:$true
                     $refreshedDevice = $refreshedList | Where-Object { $_.Serial -eq $selectedDevice }
                     
                     if ($refreshedDevice -and $refreshedDevice.State -eq 'device') {
@@ -2042,11 +2090,15 @@ function Start-Scrcpy {
         if (-not [string]::IsNullOrWhiteSpace($config.selectedDevice)) {
             $config.selectedDevice = $config.selectedDevice.Trim()
             Write-DebugLog "Checking device connection: $($config.selectedDevice)"
-            
-            $deviceList = Get-AdbDeviceList -adbPath $executables.AdbPath -MaxRetries 3
+
+            $deviceList = Get-AdbDeviceList -adbPath $executables.AdbPath -ForceRefresh:$true
             $device = $deviceList | Where-Object { $_.Serial -eq $config.selectedDevice } | Select-Object -First 1
 
             if (-not $device -or $device.State -ne 'device') {
+                if ($script:DeviceCache.SelectedDeviceInfo.ContainsKey($config.selectedDevice)) {
+                    $script:DeviceCache.SelectedDeviceInfo.Remove($config.selectedDevice)
+                }
+                
                 Write-ErrorLog "Selected device '$($config.selectedDevice)' is not connected or not in device state."
 
                 if (-not [string]::IsNullOrEmpty($DeviceSerial)) {
@@ -2160,7 +2212,8 @@ function Start-Scrcpy {
             Write-InfoLog "Recording enabled, output path: $fullPath"
         }
         # 5. Launch scrcpy
-        $deviceDisplayName = Get-DeviceDisplayName -adbPath $executables.AdbPath -deviceSerial $config.selectedDevice
+        $deviceInfo = Get-DeviceInfo -adbPath $executables.AdbPath -deviceSerial $config.selectedDevice
+        $deviceDisplayName = $deviceInfo.DisplayName
         if (-not $DisableClearHost) { Clear-Host }
         Write-Host "  STARTING SCRCPY SESSION" -ForegroundColor Cyan
         Write-InfoLog "Preset: '$($selectedPreset.name)'"
@@ -2385,23 +2438,20 @@ function Main {
     while ($true) {
         $options = @()
         $deviceDisplayName = if (-not [string]::IsNullOrEmpty($config.selectedDevice)) {
-            Get-DeviceDisplayName -adbPath $executables.AdbPath -deviceSerial $config.selectedDevice
+            $deviceInfo = Get-DeviceInfo -adbPath $executables.AdbPath -deviceSerial $config.selectedDevice
+            $displayText = $deviceInfo.DisplayName
+
+            if ($null -ne $deviceInfo.BatteryLevel -and $deviceInfo.BatteryLevel -lt 50) {
+                $displayText += " Battery: $($deviceInfo.BatteryLevel)%"
+            }
+
+            $displayText
         } else {
-            "No device selected"
+            Write-ErrorLog "No device selected"
         }
         
         $recordingIndicator = if ($script:RecordingMode) { " 🔴" } else { "" }
-        if (-not [string]::IsNullOrEmpty($config.selectedDevice)) {
-            $deviceList = Get-AdbDeviceList -adbPath $executables.AdbPath
-            $device = $deviceList | Where-Object { $_.Serial -eq $config.selectedDevice -and $_.State -eq 'device' } | Select-Object -First 1
-            
-            if ($device) {
-                $batteryLevel = Get-DeviceBatteryLevel -adbPath $executables.AdbPath -deviceSerial $config.selectedDevice
-                if ($null -ne $batteryLevel -and $batteryLevel -lt 30) {
-                    $deviceDisplayName += " Battery: ${batteryLevel}%"
-                }
-            }
-        }
+        $deviceDisplayName += $recordingIndicator
 
 
         $presetIndices = @()
