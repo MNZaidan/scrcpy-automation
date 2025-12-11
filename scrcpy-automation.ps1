@@ -118,6 +118,7 @@ param (
 
 #region Global Variables and Defaults
 $global:LastAdbOperation = $null
+$script:BatteryCache = @{}
 $OutputEncoding = [System.Text.Encoding]::UTF8
 $ScriptVersion = "2.27"
 $MaxMenuItems = 19 # The maximum number of items to display in menus before scrolling
@@ -709,10 +710,37 @@ function Get-DeviceDisplayName {
 function Get-DeviceBatteryLevel {
     param (
         [string]$adbPath,
-        [string]$deviceSerial
+        [string]$deviceSerial,
+        [switch]$ForceRefresh
     )
     
     try {
+        $deviceList = Get-AdbDeviceList -adbPath $adbPath -MaxRetries 0
+        $device = $deviceList | Where-Object { 
+            $_.Serial.Trim() -eq $deviceSerial -and $_.State -eq 'device'
+        } | Select-Object -First 1
+        
+        if (-not $device) {
+            if ($script:BatteryCache.ContainsKey($deviceSerial)) {
+                $script:BatteryCache.Remove($deviceSerial)
+            }
+            Write-DebugLog "Device $deviceSerial not connected or not in 'device' state"
+            return $null
+        }
+        
+        if (-not $ForceRefresh -and $script:BatteryCache.ContainsKey($deviceSerial)) {
+            $cacheEntry = $script:BatteryCache[$deviceSerial]
+            $cacheTime = $cacheEntry.Time
+            $batteryLevel = $cacheEntry.Level
+            
+            $timeSinceLastCheck = (Get-Date) - $cacheTime
+            if ($timeSinceLastCheck.TotalMinutes -lt 5) {
+                Write-DebugLog "Using cached battery level for $deviceSerial : ${batteryLevel}% (cache age: $([math]::Round($timeSinceLastCheck.TotalSeconds, 1))s)"
+                return $batteryLevel
+            }
+        }
+        
+        Write-DebugLog "Fetching fresh battery level for device: $deviceSerial"
         $output = & $adbPath -s $deviceSerial shell "dumpsys battery" 2>&1
         
         if ($LASTEXITCODE -ne 0) {
@@ -724,7 +752,13 @@ function Get-DeviceBatteryLevel {
         
         if ($outputString -match 'level:\s*(\d+)') {
             $batteryLevel = [int]$matches[1]
-            Write-DebugLog "device battery level: $batteryLevel%"
+            Write-DebugLog "Device battery level: $batteryLevel%"
+            
+            $script:BatteryCache[$deviceSerial] = @{
+                Level = $batteryLevel
+                Time = Get-Date
+            }
+            
             return $batteryLevel
         }
         
@@ -734,6 +768,14 @@ function Get-DeviceBatteryLevel {
     catch {
         Write-DebugLog "Exception getting battery level: $($_.Exception.Message)"
         return $null
+    }
+}
+function Clear-BatteryCache {
+    param([string]$deviceSerial)
+    
+    if ($script:BatteryCache.ContainsKey($deviceSerial)) {
+        $script:BatteryCache.Remove($deviceSerial)
+        Write-DebugLog "Cleared battery cache for device: $deviceSerial"
     }
 }
 
@@ -969,6 +1011,10 @@ function Show-DeviceSelection {
             $selectedDeviceIndex = $choiceIndex - 2
             $selectedDevice = $deviceList[$selectedDeviceIndex].Serial.Trim()
             Write-DebugLog "User selected device: $selectedDevice (Index: $selectedDeviceIndex)"
+
+            if ($selectedDevice -ne $currentDevice) {
+                Clear-BatteryCache -deviceSerial $selectedDevice
+            }
             
             if ($deviceList[$selectedDeviceIndex].State -ne 'device') {
                 Write-WarnLog "Device is in $($deviceList[$selectedDeviceIndex].State) state."
@@ -2346,7 +2392,7 @@ function Main {
         
         $recordingIndicator = if ($script:RecordingMode) { " 🔴" } else { "" }
         if (-not [string]::IsNullOrEmpty($config.selectedDevice)) {
-            $deviceList = Get-AdbDeviceList -adbPath $executables.AdbPath -MaxRetries 1
+            $deviceList = Get-AdbDeviceList -adbPath $executables.AdbPath
             $device = $deviceList | Where-Object { $_.Serial -eq $config.selectedDevice -and $_.State -eq 'device' } | Select-Object -First 1
             
             if ($device) {
