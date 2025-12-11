@@ -1000,11 +1000,10 @@ function Show-AdbOptionsMenu {
     while ($true) {
         $options = @(
             "adb connect (auto)",
-            "adb connect (manual)"
+            "adb connect (manual)",
             "adb pair",
-            "adb tcpip"
+            "adb tcpip",
             "adb kill-server",
-            "Clear Device Caches"
             "Back"
         )
         $menuResult = Show-Menu -Title "ADB Connection Options" -Options $options -Footer @("[ ↑/↓ ] Navigate", "[Enter] Select", "[ESC/X] Back")
@@ -1020,11 +1019,6 @@ function Show-AdbOptionsMenu {
             2 { Invoke-AdbPair -adbPath $adbPath }
             3 { Invoke-AdbTcpip -adbPath $adbPath }
             4 { Invoke-AdbKillServer -adbPath $adbPath }
-            5 { 
-                Clear-DeviceCaches
-                Write-InfoLog "Device caches cleared." -ForegroundColor Green
-                Wait-Enter
-            }
         }
     }
 }
