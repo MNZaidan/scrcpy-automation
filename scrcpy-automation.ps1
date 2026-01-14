@@ -1096,7 +1096,7 @@ function Show-DeviceSelection {
             $selectedDevice = $deviceList[$selectedDeviceIndex].Serial.Trim()
             Write-DebugLog "User selected device: $selectedDevice (Index: $selectedDeviceIndex)"
             
-            Get-DeviceInfo -adbPath $adbPath -deviceSerial $selectedDevice -ForceRefresh:$true
+            $null = Get-DeviceInfo -adbPath $adbPath -deviceSerial $selectedDevice -ForceRefresh:$true
             
             if ($deviceList[$selectedDeviceIndex].State -ne 'device') {
                 Write-WarnLog "Device is in $($deviceList[$selectedDeviceIndex].State) state."
